@@ -14,7 +14,6 @@
             position: fixed;
             display: block;
             image-rendering: auto;
-            /* размер и позиция — выставляются из JS (resize()) */
         }
         #ui {
             position: fixed;
@@ -27,7 +26,6 @@
             color: #e2e8f0;
             z-index: 10;
             transform-origin: top left;
-            /* размер — выставляет JS */
         }
         #ui .hidden { display: none !important; }
         .panel { width: 520px; text-align: center; }
@@ -84,29 +82,47 @@
 </div>
 
 <script>
+/* ================= Глобальные перехватчики ошибок =================
+   Если что-то падает в кадре — рисуем красный баннер, а не молчим.
+   Смотри консоль DevTools — там будет стек. */
+let lastError = null;
+function showFatalError(msg, stack) {
+    lastError = { msg: String(msg || ''), stack: String(stack || '') };
+    try { console.error('[DVD FATAL]', msg, stack); } catch (e) {}
+    try {
+        const c = document.getElementById('game');
+        const g = c.getContext('2d');
+        const W = c.width, H = c.height;
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        g.fillStyle = 'rgba(120,0,0,0.85)';
+        g.fillRect(0, 0, W, 60);
+        g.fillStyle = '#fff';
+        g.font = 'bold 16px monospace';
+        g.textAlign = 'left'; g.textBaseline = 'top';
+        g.fillText('ОШИБКА: ' + lastError.msg.slice(0, 90), 12, 12);
+        g.font = '12px monospace';
+        g.fillText((lastError.stack || '').split('\n').slice(0, 3).join(' | ').slice(0, 160), 12, 38);
+    } catch (e) {}
+}
+window.addEventListener('error', e => showFatalError(e.message, e.error && e.error.stack));
+window.addEventListener('unhandledrejection', e => showFatalError(String(e.reason), e.reason && e.reason.stack));
+
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 
-// Внутреннее разрешение — фиксированное (логика игры и координаты снапшотов всегда 800x600).
-// Отображение масштабируется через CSS под viewport.
 const GAME_W = 800, GAME_H = 600;
 let W = GAME_W, H = GAME_H;
-let displayScale = 1;
 
 let map = null, obstacles = [], bg = null;
 
 function resize() {
-    W = GAME_W;
-    H = GAME_H;
+    W = GAME_W; H = GAME_H;
     if (canvas.width !== GAME_W) canvas.width = GAME_W;
     if (canvas.height !== GAME_H) canvas.height = GAME_H;
 
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
+    const vw = window.innerWidth, vh = window.innerHeight;
     const scale = Math.min(vw / GAME_W, vh / GAME_H);
-    displayScale = scale;
-    const dw = GAME_W * scale;
-    const dh = GAME_H * scale;
+    const dw = GAME_W * scale, dh = GAME_H * scale;
     const ox = Math.round((vw - dw) / 2);
     const oy = Math.round((vh - dh) / 2);
 
@@ -139,58 +155,25 @@ function toggleFullscreen() {
 document.addEventListener('fullscreenchange', resize);
 
 const rand = (a, b) => a + Math.random() * (b - a);
-const pick = arr => arr.length ? arr[Math.floor(Math.random() * arr.length)] : null;
+const pick = arr => (arr && arr.length) ? arr[Math.floor(Math.random() * arr.length)] : null;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const S = () => clamp(H / 800, 0.6, 1.5);
 
-/* ================= Настройки ================= */
 const CFG = {
-    enemyHP: 50,
-    helperHP: 15,
-    teamHP: 10,
-    enemySize: 60,
-    helperSize: 60,
-    teamSize: 60,
-    enemySpeed: 170,
-    helperSpeed: 160,
-    teamSpeed: 150,
-    boostMult: 1.7,
-    boostTime: 5,
-    shieldTime: 4,
-    tripleTime: 10,
-    shrinkTime: 5,
-    shrinkScale: 0.55,
+    enemyHP: 50, helperHP: 15, teamHP: 10,
+    enemySize: 60, helperSize: 60, teamSize: 60,
+    enemySpeed: 170, helperSpeed: 160, teamSpeed: 150,
+    boostMult: 1.7, boostTime: 5,
+    shieldTime: 4, tripleTime: 10, shrinkTime: 5, shrinkScale: 0.55,
     freezeTime: 10,
-    spawnEvery: 3,
-    maxPickups: 4,
-    pickupLife: 10,
-    hitCooldown: 0.6,
-
-    eventGap: 30,
-    potionTime: 3,
-    potionFlight: 0.7,
-    mutantSize: 60,
-    mutantSpeed: 155,
-    acidDamage: 2,
-    dissolveTime: 1.6,
-    puddleR: 46,
-    puddleLife: 10,
-    puddleTick: 1,
-    bossHP: 200,
-    bossTeamHP: 25,
-    bossSize: 84,
-    bossSpeed: 150,
-    reviveChance: 0.3,
-    angelTime: 2.4,
-    swordShort: 0.3,
-    swordLong: 1.8,
-
-    fartMin: 5,
-    fartMax: 10,
-    dashTime: 0.4,
-    dashMult: 2.6,
-
-    turnRate: 30       // «точность» управления: 30/сек -> ~2-3 кадра до полного поворота
+    spawnEvery: 3, maxPickups: 4, pickupLife: 10, hitCooldown: 0.6,
+    eventGap: 30, potionTime: 3, potionFlight: 0.7,
+    mutantSize: 60, mutantSpeed: 155, acidDamage: 2, dissolveTime: 1.6,
+    puddleR: 46, puddleLife: 10, puddleTick: 1,
+    bossHP: 200, bossTeamHP: 25, bossSize: 84, bossSpeed: 150,
+    reviveChance: 0.3, angelTime: 2.4,
+    swordShort: 0.3, swordLong: 1.8,
+    fartMin: 5, fartMax: 10, dashTime: 0.4, dashMult: 2.6,
+    turnRate: 30
 };
 
 const EVENTS = [
@@ -222,13 +205,17 @@ const ROLES = [
     { id: 'danya', nick: 'Даня', team: 'team', photo: 'photo2.jpg' },
     { id: 'matvey', nick: 'Матвей', team: 'team', photo: 'photo3.jpg' }
 ];
-// безопасный фолбэк — раньше возвращал undefined -> TypeError
-const imgByNick = nick => {
+
+/* Жёсткий, никогда не undefined */
+function imgByNick(nick) {
+    if (!nick) return IMGS.enemy;
     if (nick === 'БОСС') return IMGS.boss;
     const f = FACES.find(f => f.nick === nick);
-    return f ? f.img : IMGS.enemy;
-};
-const ready = im => !!im && im.complete && im.naturalWidth > 0;
+    return (f && f.img) || IMGS.enemy;
+}
+function ready(im) {
+    return !!im && im instanceof HTMLImageElement && im.complete && im.naturalWidth > 0;
+}
 
 /* ================= Сеть ================= */
 const net = {
@@ -244,8 +231,11 @@ let stage = 1, playersWon = false, victoryT = 0, fwT = 0;
 const ARENA1 = { x: 165, y: 56, w: 470, h: 484 };
 const ARENA2 = { x: 0, y: 0, w: 800, h: 600 };
 let arena = { ...ARENA1 }, arenaTarget = { ...ARENA1 };
-let ents, enemy, helperEnt, pickups, particles, puffs, puddles, drops, ripples, texts;
-let spawnT, countT, goT, state, ev, last = performance.now();
+let ents = [], enemy = null, helperEnt = null;
+let pickups = [], particles = [], puffs = [], puddles = [], drops = [], ripples = [], texts = [];
+let spawnT = 0, countT = 5, goT = 0, state = 'countdown';
+let ev = { phase: 'wait', t: 0, def: null, potion: null, proj: null, rain: 0, bannerT: 0, bannerText: '', bannerColor: '#fff' };
+let last = performance.now();
 let freeze = { t: 0, owner: null, wave: 0, bannerT: 0, bannerText: '' };
 let freezeActive = false;
 const keys = {};
@@ -380,10 +370,7 @@ function newRound() {
     ev = { phase: 'wait', t: CFG.eventGap, def: null, potion: null, proj: null, rain: 0, bannerT: 0, bannerText: '', bannerColor: '#fff' };
     freeze = { t: 0, owner: null, wave: 0, bannerT: 0, bannerText: '' };
     freezeActive = false;
-    spawnT = 0;
-    countT = 5;
-    goT = 0;
-    state = 'countdown';
+    spawnT = 0; countT = 5; goT = 0; state = 'countdown';
 }
 
 function segDist(px, py, ax, ay, bx, by) {
@@ -412,7 +399,6 @@ function addRipple(o) {
     if (net.mode === 'host') netFx(['r', Math.round(o.x), Math.round(o.y), o.life, o.big ? 1 : 0]);
     ripples.push(o);
 }
-
 function burst(x, y, color, n = 10, sp = 160) {
     if (net.mode === 'host') netFx(['b', Math.round(x), Math.round(y), color, n, sp]);
     for (let i = 0; i < n; i++) {
@@ -436,9 +422,9 @@ function pickType() {
     return 'hp';
 }
 const pickupColor = t => ({
-    hp: '#22c55e', speed: '#facc15', shield: '#60a5fa', triple: '#fb923c', shrink: '#a78bfa',
-    time: '#e2e8f0', sword: '#f472b6', revive: '#fde047'
-}[t]);
+    hp: '#22c55e', speed: '#facc15', shield: '#60a5fa', triple: '#fb923c',
+    shrink: '#a78bfa', time: '#e2e8f0', sword: '#f472b6', revive: '#fde047'
+}[t] || '#22c55e');
 
 function spawnPickup() {
     let x = 0, y = 0;
@@ -462,9 +448,19 @@ function spawnConfetti(n) {
         confetti.push({
             x: rand(0, W), y: rand(-40, -5), vx: rand(-40, 40), vy: rand(60, 200),
             rot: rand(0, 6), vr: rand(-8, 8), size: rand(6, 12),
-            color: pick(['#facc15', '#f472b6', '#38bdf8', '#4ade80', '#fb923c', '#a78bfa', '#ffffff'])
+            color: pick(['#facc15', '#f472b6', '#38bdf8', '#4ade80', '#fb923c', '#a78bfa', '#ffffff']) || '#fff'
         });
     }
+}
+
+/* ===== КЛЮЧЕВОЙ ФИКС =====
+   Ангел теперь хранит nick — чтобы imgByNick на клиенте не получал undefined. */
+function spawnAngel(x, y, img, nick) {
+    angels.push({
+        x, y, t: 0, life: CFG.angelTime,
+        img: img || imgByNick(nick),
+        nick: nick || 'Ваня'   // fallback чтобы никогда не отдать undefined
+    });
 }
 
 function reviveEnt(t, x, y) {
@@ -473,7 +469,7 @@ function reviveEnt(t, x, y) {
     t.x = clamp(x, arena.x + t.r, arena.x + arena.w - t.r);
     t.y = clamp(y, arena.y + t.r, arena.y + arena.h - t.r);
     t.shieldT = 2; t.flash = 0; t.extraSwords = 0;
-    angels.push({ x: t.x, y: t.y, t: 0, life: CFG.angelTime, img: t.img });
+    spawnAngel(t.x, t.y, t.img, t.nick);
     floatText(t.x, t.y - 90, t.nick + ' ВОЗРОДИЛСЯ!', '#fef9c3', 24);
     burst(t.x, t.y, '#fef08a', 50, 360);
 }
@@ -491,7 +487,7 @@ function applyPickup(e, type, amount = 1) {
         const dead = ents.filter(t => t.kind === 'team' && !t.mutant && !t.alive);
         if (dead.length) {
             const t = pick(dead);
-            reviveEnt(t, t.deathX != null ? t.deathX : e.x, t.deathY != null ? t.deathY : e.y);
+            if (t) reviveEnt(t, t.deathX != null ? t.deathX : e.x, t.deathY != null ? t.deathY : e.y);
         }
     }
     else if (type === 'sword') {
@@ -507,7 +503,7 @@ function applyPickup(e, type, amount = 1) {
 
 function addPuff(x, y, size = 1) {
     if (net.mode === 'host') netFx(['p', Math.round(x), Math.round(y), size]);
-    puffs.push({ x, y, vx: rand(-30, 30), vy: rand(-30, 30), r: rand(14, 28) * size, life: rand(1.1, 1.8), max: 1.8 });
+    puffs.push({ x, y, vx: rand(-30, 30), vy: rand(-30, 30), r: Math.max(2, rand(14, 28) * size), life: rand(1.1, 1.8), max: 1.8 });
 }
 function doFart(e) {
     const n = Math.hypot(e.vx, e.vy) || 1;
@@ -530,8 +526,9 @@ function startEvent() {
     ev.bannerColor = def.color;
     if (def.id === 'acid') {
         const candidates = ents.filter(e => e.alive && !e.mutant);
-        if (!candidates.length) { ev.t = 1; return; }   // отложить на секунду, если некого зельем награждать
+        if (!candidates.length) { ev.t = 1; return; }
         const owner = pick(candidates);
+        if (!owner) { ev.t = 1; return; }
         ev.potion = { owner, t: CFG.potionTime, x: owner.x, y: owner.y };
         ev.proj = null;
     }
@@ -580,7 +577,6 @@ function updateEvent(dt) {
         else endEvent();
     }
     if (ev.phase !== 'active' || !ev.def) return;
-
     if (ev.def.id === 'acid') {
         if (ev.potion) {
             const p = ev.potion;
@@ -611,7 +607,7 @@ function startBossStage() {
     stage = 2;
     ents.filter(e => e.mutant).forEach(m => burst(m.x, m.y, '#bef264', 20, 220));
     ents = ents.filter(e => e.kind === 'team' && !e.mutant);
-    pickups = []; puddles = []; drops = []; angels = []; puffs = [];
+    pickups = []; puddles = []; drops = []; angels = []; puffs = []; texts = []; ripples = []; particles = [];
     ev = { phase: 'wait', t: 15, def: null, potion: null, proj: null, rain: 0, bannerT: 0, bannerText: '', bannerColor: '#fff' };
     freeze = { t: 0, owner: null, wave: 0, bannerT: 0, bannerText: '' };
     freezeActive = false;
@@ -643,6 +639,12 @@ function startBossStage() {
     enemy = boss;
     burst(boss.x, boss.y, '#c084fc', 60, 400);
     state = 'countdown'; countT = 3; goT = 0; spawnT = 0;
+
+    /* Немедленный снап — гость получает чистое состояние без гонки с 50ms-аккумулятором */
+    if (net.mode === 'host') {
+        try { wsSend(buildSnap()); } catch (err) { console.error('[boss-snap]', err); }
+        net.snapAcc = 0;
+    }
 }
 
 function damage(target, dmg = 1, color = '#ef4444') {
@@ -686,7 +688,7 @@ function updateVisuals(dt, wdt) {
         if (net.mode !== 'guest' && fwT <= 0 && victoryT < 14) {
             fwT = 0.45;
             const fx = rand(100, W - 100), fy = rand(70, H * 0.55);
-            burst(fx, fy, pick(['#facc15', '#f472b6', '#38bdf8', '#4ade80', '#fb923c']), 36, 300);
+            burst(fx, fy, pick(['#facc15', '#f472b6', '#38bdf8', '#4ade80', '#fb923c']) || '#facc15', 36, 300);
             addRipple({ x: fx, y: fy, t: 0, life: 0.6 });
         }
         if (victoryT < 12) spawnConfetti(dt * 70);
@@ -742,7 +744,7 @@ function update(dt) {
                 particles.push({
                     x: e.x + rand(-e.r, e.r), y: e.y + rand(-e.r * 0.5, e.r * 0.5),
                     vx: rand(-30, 30), vy: rand(-90, -20),
-                    life: 0.8, max: 0.8, color: pick(['#84cc16', '#a3e635', '#4ade80'])
+                    life: 0.8, max: 0.8, color: pick(['#84cc16', '#a3e635', '#4ade80']) || '#a3e635'
                 });
             }
             if (e.dissolveT <= 0) {
@@ -756,7 +758,7 @@ function update(dt) {
                         orig.hp = Math.max(1, Math.ceil(orig.max / 2));
                         orig.x = e.x; orig.y = e.y;
                         orig.shieldT = 2; orig.flash = 0; orig.extraSwords = 0;
-                        angels.push({ x: e.x, y: e.y, t: 0, life: CFG.angelTime, img: orig.img });
+                        spawnAngel(e.x, e.y, orig.img, orig.nick);
                         floatText(e.x, e.y - 90, orig.nick + ' ВОЗРОДИЛСЯ!', '#fef9c3', 26);
                         burst(e.x, e.y, '#fef08a', 50, 360);
                     }
@@ -776,9 +778,6 @@ function update(dt) {
     if (state === 'go') { goT -= dt; if (goT <= 0) state = 'play'; }
     if (state === 'over') return;
 
-    // === ТОЧНОЕ УПРАВЛЕНИЕ ===
-    // Направление плавно, но быстро (turnRate/сек) перетекает к нажатой оси.
-    // Отпускание всех клавиш НЕ сбрасывает направление (DVD-стиль, всегда в движении).
     ents.forEach(e => {
         if (!e.alive || e.mutant || e.dissolving || !e.role || frozen(e)) return;
         const k = roleInput(e.role);
@@ -790,7 +789,7 @@ function update(dt) {
         }
     });
 
-    if (enemy.alive && !frozen(enemy)) {
+    if (enemy && enemy.alive && !frozen(enemy)) {
         enemy.fartIn -= dt;
         if (enemy.fartIn <= 0) {
             doFart(enemy);
@@ -894,8 +893,8 @@ function update(dt) {
     if (!freezeActive) updateEvent(dt);
 
     if (ents.filter(e => e.kind === 'team' && !e.mutant).every(e => !e.alive)) { playersWon = false; state = 'over'; return; }
-    if (stage === 1 && !enemy.alive && !helperEnt.alive) { startBossStage(); return; }
-    if (stage === 2 && !enemy.alive) {
+    if (stage === 1 && enemy && helperEnt && !enemy.alive && !helperEnt.alive) { startBossStage(); return; }
+    if (stage === 2 && enemy && !enemy.alive) {
         playersWon = true; state = 'over'; victoryT = 0; fwT = 0;
         spawnConfetti(140);
         burst(enemy.x, enemy.y, '#c084fc', 80, 450);
@@ -947,9 +946,7 @@ function rr(x, y, w, h, r) {
     ctx.arcTo(x, y, x + w, y, r);
     ctx.closePath();
 }
-
 function hpColor(f) { return f > 0.5 ? '#22c55e' : f > 0.25 ? '#facc15' : '#ef4444'; }
-
 function bar(x, y, w, h, f, color) {
     ctx.fillStyle = 'rgba(255,255,255,0.12)';
     rr(x, y, w, h, h / 2); ctx.fill();
@@ -960,6 +957,7 @@ function bar(x, y, w, h, f, color) {
 }
 
 function avatar(img, cx, cy, r, ring, dim, tint = 0) {
+    if (!isFinite(cx) || !isFinite(cy) || !isFinite(r) || r <= 0) return;
     ctx.save();
     ctx.beginPath(); ctx.arc(cx, cy, r, 0, 6.283); ctx.clip();
     if (ready(img)) {
@@ -968,7 +966,7 @@ function avatar(img, cx, cy, r, ring, dim, tint = 0) {
         ctx.drawImage(img, cx - w / 2, cy - h / 2, w, h);
     } else {
         ctx.fillStyle = '#334155'; ctx.fillRect(cx - r, cy - r, 2 * r, 2 * r);
-        ctx.fillStyle = '#94a3b8'; ctx.font = `bold ${r}px Arial`;
+        ctx.fillStyle = '#94a3b8'; ctx.font = `bold ${Math.max(8, r)}px Arial`;
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText('?', cx, cy);
     }
@@ -1034,7 +1032,7 @@ function drawEnt(e) {
 
     if (e.dissolving) {
         const R = CFG.puddleR * (0.25 + 0.75 * dis);
-        const g = ctx.createRadialGradient(e.x, e.y, 2, e.x, e.y, R);
+        const g = ctx.createRadialGradient(e.x, e.y, 2, e.x, e.y, Math.max(3, R));
         g.addColorStop(0, 'rgba(255,255,255,0.9)');
         g.addColorStop(1, 'rgba(56,189,248,0.25)');
         ctx.globalAlpha = 0.4 + 0.5 * dis;
@@ -1042,7 +1040,6 @@ function drawEnt(e) {
         ctx.beginPath(); ctx.arc(e.x, e.y, R, 0, 6.283); ctx.fill();
         ctx.globalAlpha = 1;
     }
-
     if (e.shieldT > 0) {
         ctx.beginPath(); ctx.arc(e.x, e.y, e.r + 8, 0, 6.283);
         ctx.strokeStyle = 'rgba(96,165,250,0.9)'; ctx.lineWidth = 4;
@@ -1065,18 +1062,15 @@ function drawEnt(e) {
         ctx.strokeStyle = `rgba(163,230,53,${0.5 + 0.4 * pulse})`; ctx.lineWidth = 5;
         ctx.shadowColor = '#84cc16'; ctx.shadowBlur = 24; ctx.stroke(); ctx.shadowBlur = 0;
     }
-
     if (!e.dissolving) {
         const n = swordCount(e);
         for (let k = 0; k < n; k++) drawSword(e, k);
     }
-
     const blink = e.flash > 0 && Math.floor(e.flash * 20) % 2 === 0 ? 0.45 : 1;
     ctx.globalAlpha = blink * (1 - dis * 0.95);
-    const ring = e.mutant ? '#a3e635' : (e.flash > 0 ? '#ef4444' : e.color);
+    const ring = e.mutant ? '#a3e635' : (e.flash > 0 ? '#ef4444' : (e.color || '#38bdf8'));
     avatar(e.img, e.x, e.y, e.r, ring, false, Math.max(e.mutant ? 0.35 : 0, dis * 0.7));
     ctx.globalAlpha = 1;
-
     if (e.dissolving) return;
 
     const w = Math.max(70, e.r * 1.6), h = 10;
@@ -1200,12 +1194,13 @@ function drawPickup(p) {
 function drawPuddle(p) {
     const grow = Math.min(1, p.t / 0.6);
     const R = p.r * grow;
+    if (R < 2) return;
     const fade = Math.min(1, p.life / 2);
     const wob = 1 + Math.sin(p.t * 3) * 0.03;
     ctx.save();
     ctx.translate(p.x, p.y);
     ctx.globalAlpha = fade;
-    const g = ctx.createRadialGradient(0, 0, Math.max(0.1, R * 0.1), 0, 0, Math.max(0.2, R));
+    const g = ctx.createRadialGradient(0, 0, Math.max(0.5, R * 0.1), 0, 0, Math.max(1, R));
     g.addColorStop(0, 'rgba(255,255,255,0.8)');
     g.addColorStop(0.7, 'rgba(125,211,252,0.5)');
     g.addColorStop(1, 'rgba(56,189,248,0.0)');
@@ -1215,19 +1210,12 @@ function drawPuddle(p) {
     ctx.shadowColor = '#7dd3fc'; ctx.shadowBlur = 14;
     ctx.beginPath(); ctx.ellipse(0, 0, R * 0.85 * wob, R * 0.75 / wob, 0, 0, 6.283); ctx.stroke();
     ctx.shadowBlur = 0;
-    for (let i = 0; i < 5; i++) {
-        const a = i * 1.7 + p.t * 0.4;
-        const rad = R * (0.2 + 0.5 * ((i * 0.37 + p.t * 0.3) % 1));
-        const bs = 2 + 3 * ((p.t * 1.5 + i * 0.3) % 1);
-        ctx.fillStyle = 'rgba(255,255,255,0.85)';
-        ctx.beginPath(); ctx.arc(Math.cos(a) * rad, Math.sin(a) * rad * 0.8, bs, 0, 6.283); ctx.fill();
-    }
     ctx.restore();
 }
 
 function drawPuff(p) {
     const u = 1 - p.life / p.max;
-    const r = p.r * (1 + u * 0.9);
+    const r = Math.max(2, p.r * (1 + u * 0.9));
     const a = (1 - u) * 0.55;
     const g = ctx.createRadialGradient(p.x, p.y, 1, p.x, p.y, r);
     g.addColorStop(0, `rgba(190,205,70,${a})`);
@@ -1288,7 +1276,6 @@ function drawEventTimer() {
     const col = active ? ev.def.color : '#94a3b8';
     ctx.fillStyle = 'rgba(15,23,42,0.7)'; rr(x, y, w, h, 10); ctx.fill();
     ctx.strokeStyle = active ? col : 'rgba(148,163,184,0.5)'; ctx.lineWidth = 1.5; ctx.stroke();
-
     ctx.save();
     ctx.translate(x + 18, y + 18);
     ctx.fillStyle = active ? col : '#64748b';
@@ -1297,7 +1284,6 @@ function drawEventTimer() {
     ctx.moveTo(0, -8); ctx.quadraticCurveTo(8, 2, 0, 8);
     ctx.quadraticCurveTo(-8, 2, 0, -8); ctx.fill();
     ctx.restore();
-
     ctx.textBaseline = 'alphabetic';
     ctx.textAlign = 'left';
     ctx.font = 'bold 9px Arial, sans-serif';
@@ -1310,7 +1296,6 @@ function drawEventTimer() {
     ctx.font = 'bold 18px Arial, sans-serif';
     ctx.fillStyle = '#fff';
     ctx.fillText(fmt(ev.t), x + w - 12, y + 25);
-
     const total = active ? ev.def.duration : CFG.eventGap;
     bar(x + 10, y + h - 6, w - 20, 3, Math.max(0, Math.min(1, ev.t / total)), active ? col : '#64748b');
 }
@@ -1323,7 +1308,7 @@ function drawCard(e, x, y, w, h, ring) {
     avatar(e.img, x + 22, y + 22, 14, e.alive ? ring : '#64748b', !e.alive);
     ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 11px Arial, sans-serif';
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-    ctx.fillText(e.title, x + 44, y + 17);
+    ctx.fillText(e.title || e.nick || '?', x + 44, y + 17);
     ctx.textAlign = 'right';
     ctx.fillText(e.alive ? `${e.hp}/${e.max}` : 'ВЫБЫЛ', x + w - 8, y + 17);
     bar(x + 44, y + 23, w - 52, 7, e.hp / e.max, hpColor(e.hp / e.max));
@@ -1333,8 +1318,9 @@ function drawCard(e, x, y, w, h, ring) {
 
 function drawHUD() {
     const cw = 150, ch = 50, m = 6;
-    if (stage === 2) drawCard(enemy, m, m, cw, ch, '#c084fc');
-    else {
+    if (stage === 2) {
+        drawCard(enemy, m, m, cw, ch, '#c084fc');
+    } else {
         drawCard(enemy, m, m, cw, ch, '#f87171');
         drawCard(helperEnt, m, m + ch + 6, cw, ch, '#fb923c');
     }
@@ -1346,6 +1332,7 @@ function drawHUD() {
 }
 
 function bigText(text, size, y, color = '#fff', scale = 1) {
+    if (!isFinite(scale) || scale <= 0) scale = 1;
     ctx.save();
     ctx.translate(W / 2, y); ctx.scale(scale, scale);
     ctx.font = `900 ${size}px Arial, sans-serif`;
@@ -1395,15 +1382,16 @@ function drawDroppedSword(d) {
 }
 
 function drawAngel(a) {
-    const u = a.t / a.life;
-    const alpha = u < 0.2 ? u / 0.2 : u > 0.75 ? (1 - u) / 0.25 : 1;
+    const life = a.life || CFG.angelTime;
+    const u = (a.t || 0) / life;
+    const alpha = u < 0.2 ? u / 0.2 : u > 0.75 ? Math.max(0, (1 - u) / 0.25) : 1;
     const rise = u * 70;
     ctx.save();
     ctx.globalAlpha = Math.max(0, alpha);
     const g = ctx.createLinearGradient(0, a.y - 260, 0, a.y + 40);
     g.addColorStop(0, 'rgba(254,249,195,0)'); g.addColorStop(1, 'rgba(254,249,195,0.75)');
     ctx.fillStyle = g; ctx.fillRect(a.x - 36, a.y - 260, 72, 300);
-    const ay = a.y - 40 - rise, flap = Math.sin(a.t * 9) * 0.18;
+    const ay = a.y - 40 - rise, flap = Math.sin((a.t || 0) * 9) * 0.18;
     ctx.fillStyle = 'rgba(255,255,255,0.92)';
     ctx.shadowColor = '#fef08a'; ctx.shadowBlur = 24;
     for (const sd of [-1, 1]) {
@@ -1412,7 +1400,8 @@ function drawAngel(a) {
         ctx.beginPath(); ctx.ellipse(sd * 34, 20, 40, 12, 0.3 * sd, 0, 6.283); ctx.fill();
         ctx.restore();
     }
-    avatar(a.img, a.x, ay, 28, '#fef08a', false);
+    /* img гарантирован: imgByNick всегда отдаёт картинку, spawnAngel — тоже */
+    avatar(a.img || imgByNick(a.nick), a.x, ay, 28, '#fef08a', false);
     ctx.strokeStyle = '#fde047'; ctx.lineWidth = 5;
     ctx.beginPath(); ctx.ellipse(a.x, ay - 40, 22, 7, 0, 0, 6.283); ctx.stroke();
     ctx.restore();
@@ -1423,7 +1412,7 @@ function applyCamera() {
     const follow = !!me && net.camOn;
     cam.z += ((follow ? 1.5 : 1) - cam.z) * Math.min(1, frameDt * 5);
     const vw = W / cam.z, vh = H / cam.z;
-    const fit = (want, lo, hi) => hi < lo ? (lo + hi) / 2 : Math.max(lo, Math.min(hi, want));
+    const fit = (want, lo, hi) => hi < lo ? (lo + hi) / 2 : clamp(want, lo, hi);
     const tx = fit(follow ? me.x - vw / 2 : (W - vw) / 2, arena.x - 20, arena.x + arena.w + 20 - vw);
     const ty = fit(follow ? me.y - vh / 2 : (H - vh) / 2, arena.y - 20, arena.y + arena.h + 20 - vh);
     if (!cam.init) { cam.x = tx; cam.y = ty; cam.init = true; }
@@ -1539,7 +1528,7 @@ function draw() {
             bigText('Игроки вылечены до ' + CFG.bossTeamHP + ' HP · бустов вдвое больше', 18, H / 2 + 105, '#fde68a');
         } else {
             bigText('Приготовьтесь!', 30, H / 2 + 70, '#cbd5e1');
-            bigText('Карта: ' + map.name, 20, H / 2 + 102, '#fde68a');
+            bigText('Карта: ' + (map && map.name ? map.name : '?'), 20, H / 2 + 102, '#fde68a');
         }
         const myR = ROLES.find(r => r.id === net.myRole);
         bigText(myR ? 'WASD / стрелки — вы: ' + (stage === 2 && myR.id === 'semyon' ? 'БОСС' : myR.nick) + ' · C — камера · F — fullscreen'
@@ -1553,6 +1542,16 @@ function draw() {
             bigText('ВРАГ ПОБЕДИЛ!', 64, H / 2 - 20, '#f87171');
             bigText('R или клик — новый раунд', 24, H / 2 + 45, '#e2e8f0');
         }
+    }
+
+    if (lastError) {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.fillStyle = 'rgba(120,0,0,0.85)';
+        ctx.fillRect(0, 0, W, 60);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 16px monospace';
+        ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+        ctx.fillText('ОШИБКА: ' + lastError.msg.slice(0, 90), 12, 12);
     }
 }
 
@@ -1642,7 +1641,7 @@ addEventListener('keydown', e => {
 addEventListener('keyup', e => { keys[e.code] = false; sendInput(); });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; sendInput(); });
 addEventListener('mousedown', () => { requestRestart(); });
-addEventListener('beforeunload', () => { try { wsSend({ t: 'leave' }); } catch (e) { /* ignore */ } });
+addEventListener('beforeunload', () => { try { wsSend({ t: 'leave' }); } catch (e) {} });
 
 /* ================= Сеть ================= */
 const $ = id => document.getElementById(id);
@@ -1685,7 +1684,9 @@ function onNetMessage(m) {
         case 'snap':
             if (net.mode === 'guest' && m.d && Array.isArray(m.d.e)) {
                 net.snapAge = 0;
-                try { applySnap(m.d); } catch (e) { console.error('[snap]', e); }
+                try { applySnap(m.d); } catch (e) {
+                    console.error('[snap FAILED]', e, 'snap stage=', m.d && m.d.sg);
+                }
             }
             break;
         case 'input':
@@ -1713,7 +1714,7 @@ const playerName = role => {
     return pl ? pl.name : '';
 };
 
-const r1 = v => Math.round(v * 10) / 10;
+const r1 = v => (isFinite(v) ? Math.round(v * 10) / 10 : 0);
 function buildSnap() {
     ents.forEach(e => { e.player = playerName(e.role); });
     const E = e => ({
@@ -1734,10 +1735,11 @@ function buildSnap() {
             p: pickups.map(q => ({ type: q.type, x: r1(q.x), y: r1(q.y), amount: q.amount, life: r1(q.life), t: r1(q.t) })),
             u: puddles.map(q => ({ x: r1(q.x), y: r1(q.y), r: q.r, life: r1(q.life), t: r1(q.t) })),
             s: droppedSwords.map(q => ({ x: r1(q.x), y: r1(q.y), n: q.n, t: r1(q.t) })),
-            a: angels.map(q => ({ x: r1(q.x), y: r1(q.y), t: r1(q.t), life: q.life, nick: q.nick })),
+            /* nick теперь всегда отправляется — imgByNick на клиенте никогда не получит undefined */
+            a: angels.map(q => ({ x: r1(q.x), y: r1(q.y), t: r1(q.t), life: q.life, nick: q.nick || 'Ваня' })),
             ev: {
                 ph: ev.phase, t: r1(ev.t), def: ev.def ? ev.def.id : null, bt: r1(ev.bannerT), bx: ev.bannerText, bc: ev.bannerColor,
-                po: po ? { o: po.owner.id, x: r1(po.x), y: r1(po.y), t: r1(po.t) } : null,
+                po: (po && po.owner) ? { o: po.owner.id, x: r1(po.x), y: r1(po.y), t: r1(po.t) } : null,
                 pr: pr ? { sx: r1(pr.sx), sy: r1(pr.sy), tx: r1(pr.tx), ty: r1(pr.ty), t: r1(pr.t) } : null
             },
             fa: freezeActive,
@@ -1748,10 +1750,18 @@ function buildSnap() {
 }
 
 function applySnap(d) {
+    const prevStage = stage;
     const wasOver = state === 'over';
     state = d.st; stage = d.sg; countT = d.ct; goT = d.gt; playersWon = !!d.pw;
     arenaTarget = { x: d.ar[0], y: d.ar[1], w: d.ar[2], h: d.ar[3] };
     if (!net.haveSnap) arena = { ...arenaTarget };
+
+    /* Резкая смена stage: чистим transient — старые ангелы/частицы не должны
+       висеть в кадре перехода (плюс это страховка от старого snap-рассинхрона). */
+    if (prevStage !== d.sg) {
+        angels = []; particles = []; puffs = []; texts = [];
+        drops = []; ripples = []; confetti = [];
+    }
 
     const old = new Map(ents.map(e => [e.id, e]));
     ents = d.e.map(se => {
@@ -1766,18 +1776,23 @@ function applySnap(d) {
     helperEnt = ents.find(e => e.helper) || helperEnt;
 
     pickups = d.p || []; puddles = d.u || []; droppedSwords = d.s || [];
+    /* ФИКС: каждый ангел гарантированно получает валидный img */
     angels = (d.a || []).map(a => Object.assign({}, a, { img: imgByNick(a.nick) }));
 
-    ev.phase = d.ev.ph; ev.t = d.ev.t; ev.def = d.ev.def ? EVENTS.find(x => x.id === d.ev.def) : null;
-    ev.bannerT = d.ev.bt; ev.bannerText = d.ev.bx; ev.bannerColor = d.ev.bc;
-    ev.potion = d.ev.po ? { owner: byId(d.ev.po.o) || null, x: d.ev.po.x, y: d.ev.po.y, t: d.ev.po.t } : null;
-    ev.proj = d.ev.pr;
-
+    if (d.ev) {
+        ev.phase = d.ev.ph; ev.t = d.ev.t;
+        ev.def = d.ev.def ? EVENTS.find(x => x.id === d.ev.def) || null : null;
+        ev.bannerT = d.ev.bt; ev.bannerText = d.ev.bx; ev.bannerColor = d.ev.bc;
+        ev.potion = d.ev.po ? { owner: byId(d.ev.po.o) || null, x: d.ev.po.x, y: d.ev.po.y, t: d.ev.po.t } : null;
+        ev.proj = d.ev.pr;
+    }
     net.freezeActive = !!d.fa;
-    freeze.t = d.fr.t; freeze.owner = d.fr.o ? byId(d.fr.o) || null : null; freeze.wave = d.fr.w;
-    freeze.bannerT = d.fr.bt; freeze.bannerText = d.fr.bx;
-
+    if (d.fr) {
+        freeze.t = d.fr.t; freeze.owner = d.fr.o ? byId(d.fr.o) || null : null; freeze.wave = d.fr.w;
+        freeze.bannerT = d.fr.bt; freeze.bannerText = d.fr.bx;
+    }
     (d.fx || []).forEach(f => {
+        if (!f || !f.length) return;
         if (f[0] === 'b') burst(f[1], f[2], f[3], f[4], f[5]);
         else if (f[0] === 't') floatText(f[1], f[2], f[3], f[4], f[5]);
         else if (f[0] === 'r') ripples.push({ x: f[1], y: f[2], t: 0, life: f[3], big: !!f[4] });
@@ -1793,6 +1808,7 @@ function guestUpdate(dt) {
     const wdt = freezeActive ? dt * 0.05 : dt;
     const k = Math.min(1, dt * 16);
     ents.forEach(e => {
+        if (!isFinite(e.x) || !isFinite(e.tx)) { e.x = e.tx || 0; e.y = e.ty || 0; }
         if (Math.hypot(e.tx - e.x, e.ty - e.y) > 160) { e.x = e.tx; e.y = e.ty; }
         else { e.x += (e.tx - e.x) * k; e.y += (e.ty - e.y) * k; }
         if (e.alive && !frozen(e)) e.angle += e.spin * dt;
@@ -1810,7 +1826,7 @@ function showPanel(name) {
 function menuMsg(text, color) { const m = $('menuMsg'); m.textContent = text || ''; m.style.color = color || '#fca5a5'; }
 function myName() {
     const n = ($('nameInp').value || '').trim().slice(0, 16) || 'Игрок';
-    try { localStorage.setItem('dvd_name', n); } catch (e) { /* ignore */ }
+    try { localStorage.setItem('dvd_name', n); } catch (e) {}
     return n;
 }
 function renderLobby() {
@@ -1843,7 +1859,7 @@ function pickRole(id) {
     } else wsSend({ t: 'role', role: want });
 }
 function backToMenu(msg) {
-    if (net.ws) { const w = net.ws; net.ws = null; try { w.close(); } catch (e) { /* ignore */ } }
+    if (net.ws) { const w = net.ws; net.ws = null; try { w.close(); } catch (e) {} }
     net.mode = 'none'; net.running = false; net.lobby = null; net.myRole = null; net.haveSnap = false; net.id = null;
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, W, H);
     showPanel('menu'); menuMsg(msg || '');
@@ -1885,10 +1901,9 @@ $('btnStart').onclick = () => {
 };
 $('btnLeave').onclick = () => { wsSend({ t: 'leave' }); backToMenu(''); };
 $('codeInp').addEventListener('keydown', e => { if (e.key === 'Enter') $('btnJoin').click(); });
-try { $('nameInp').value = localStorage.getItem('dvd_name') || ''; } catch (e) { /* ignore */ }
+try { $('nameInp').value = localStorage.getItem('dvd_name') || ''; } catch (e) {}
 
-/* ================= Цикл (safe) =================
-   rAF ставится В НАЧАЛЕ — даже если кадр упадёт с исключением, следующий кадр всё равно запланирован. */
+/* ================= Цикл ================= */
 function loop(t) {
     requestAnimationFrame(loop);
     try {
@@ -1910,17 +1925,27 @@ function loop(t) {
             if (net.mode === 'solo') ents.forEach(e => { e.player = playerName(e.role); });
             if (net.mode === 'host') {
                 net.snapAcc += dt;
-                if (net.snapAcc >= 0.05) { net.snapAcc = 0; wsSend(buildSnap()); }
+                if (net.snapAcc >= 0.05) { net.snapAcc = 0; try { wsSend(buildSnap()); } catch (e) { console.error('[snap-build]', e); } }
             }
         }
         draw();
     } catch (e) {
         console.error('[loop]', e);
+        /* Показываем ошибку пользователю — не немой экран */
+        try {
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.fillStyle = 'rgba(120,0,0,0.85)';
+            ctx.fillRect(0, 0, W, 46);
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 13px monospace';
+            ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+            ctx.fillText('ОШИБКА КАДРА: ' + String(e && e.message || e).slice(0, 90), 10, 8);
+            ctx.font = '11px monospace';
+            ctx.fillText(String(e && e.stack || '').split('\n').slice(0, 2).join(' | ').slice(0, 140), 10, 26);
+        } catch (inner) {}
     }
 }
 
-// Фоновая подкачка для хоста: если вкладка скрыта, rAF стоит — гости зависнут.
-// SetInterval держит мир живым и продолжает рассылать snap.
 setInterval(() => {
     if (!document.hidden || !net.running || net.mode !== 'host') return;
     try {
