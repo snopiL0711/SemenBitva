@@ -1,6 +1,11 @@
-// language: JavaScript, file: server.js, runtime: Node.js 18+
-// DVD Arena — сервер лобби. Без зависимостей.
-// Запуск: node server.js  (PORT из env, по умолчанию 3000)
+// DVD Arena — сервер лобби. Без зависимостей: достаточно установленного Node.js 18+.
+// Запуск:  node server.js        (порт берётся из переменной PORT, по умолчанию 3000)
+//
+// Что делает сервер:
+//  1) отдаёт index.html и картинки (photo*.jpg, boss.jpg ...) по HTTP;
+//  2) по WebSocket ведёт лобби: создание, вход по коду, выбор ролей, старт;
+//  3) пересылает ввод игроков -> хосту и состояние игры хост -> игрокам.
+// Саму игру считает браузер хоста (создателя лобби), сервер нагрузки почти не несёт.
 
 const http = require('http');
 const fs = require('fs');
@@ -12,8 +17,6 @@ const ROOT = __dirname;
 const ROLES = ['semyon', 'gleb', 'vanya', 'danya', 'matvey'];
 const MAX_PLAYERS = 8;
 const MAX_FRAME = 1024 * 1024;
-const CLIENT_IDLE_MS = 90000;   // нет никакой активности от клиента 90 сек -> принудительно закрыть
-const PING_EVERY_MS = 25000;
 
 /* ---------- статические файлы ---------- */
 const MIME = {
@@ -25,7 +28,7 @@ const MIME = {
 const httpServer = http.createServer((req, res) => {
     const url = decodeURIComponent((req.url || '/').split('?')[0]);
     if (url === '/health') { res.writeHead(200, { 'Content-Type': 'text/plain' }); return res.end('ok'); }
-    const name = url === '/' ? 'index.html' : path.basename(url);
+    const name = url === '/' ? 'index.html' : path.basename(url);   // basename: защита от ../
     const ext = path.extname(name).toLowerCase();
     if (!MIME[ext]) { res.writeHead(404); return res.end('Not found'); }
     fs.readFile(path.join(ROOT, name), (err, data) => {
@@ -72,7 +75,7 @@ const cleanName = n => String(n || '').replace(/[<>&"']/g, '').trim().slice(0, 1
 
 function send(c, obj) {
     if (!c || c.closed) return;
-    try { c.socket.write(encodeFrame(typeof obj === 'string' ? obj : JSON.stringify(obj))); } catch (e) { /* ignore */ }
+    try { c.socket.write(encodeFrame(typeof obj === 'string' ? obj : JSON.stringify(obj))); } catch (e) { /* сокет закрыт */ }
 }
 
 function lobbyState(l) {
@@ -94,12 +97,12 @@ function leaveLobby(c) {
     const l = c.lobby;
     if (!l) return;
     c.lobby = null;
-    c.role = null;
-    if (l.host === c) {
-        l.players.forEach(p => { if (p !== c) { p.lobby = null; p.role = null; send(p, { t: 'closed' }); } });
+    if (l.host === c) {                               // хост ушёл -> лобби закрыто
+        l.players.forEach(p => { if (p !== c) { p.lobby = null; send(p, { t: 'closed' }); } });
         lobbies.delete(l.code);
     } else {
         l.players.delete(c.id);
+        c.role = null;
         broadcastLobby(l);
     }
 }
@@ -107,73 +110,67 @@ function leaveLobby(c) {
 function handle(c, text) {
     let m;
     try { m = JSON.parse(text); } catch (e) { return; }
-    const l = c.lobby;
-    switch (m.t) {
-        case 'ping': break;
-        case 'create': {
-            if (l) leaveLobby(c);
-            c.name = cleanName(m.name);
-            const lobby = { code: makeCode(), host: c, players: new Map(), started: false };
-            lobby.players.set(c.id, c); c.lobby = lobby; c.role = null;
-            lobbies.set(lobby.code, lobby);
-            send(c, { t: 'joined', id: c.id, code: lobby.code, host: true });
-            broadcastLobby(lobby);
-            break;
+    try {
+        const l = c.lobby;
+        switch (m.t) {
+            case 'ping': break;
+            case 'create': {
+                if (l) leaveLobby(c);
+                c.name = cleanName(m.name);
+                const lobby = { code: makeCode(), host: c, players: new Map(), started: false };
+                lobby.players.set(c.id, c); c.lobby = lobby; c.role = null;
+                lobbies.set(lobby.code, lobby);
+                send(c, { t: 'joined', id: c.id, code: lobby.code, host: true });
+                broadcastLobby(lobby);
+                break;
+            }
+            case 'join': {
+                if (l) leaveLobby(c);
+                const lobby = lobbies.get(String(m.code || '').toUpperCase().trim());
+                if (!lobby) return send(c, { t: 'err', m: 'Лобби с таким кодом не найдено' });
+                if (lobby.started) return send(c, { t: 'err', m: 'Игра в этом лобби уже идёт' });
+                if (lobby.players.size >= MAX_PLAYERS) return send(c, { t: 'err', m: 'Лобби заполнено' });
+                c.name = cleanName(m.name);
+                lobby.players.set(c.id, c); c.lobby = lobby; c.role = null;
+                send(c, { t: 'joined', id: c.id, code: lobby.code, host: false });
+                broadcastLobby(lobby);
+                break;
+            }
+            case 'role': {
+                if (!l) return;
+                const r = m.role;
+                if (r === null || r === undefined) c.role = null;
+                else if (ROLES.includes(r) && ![...l.players.values()].some(p => p.role === r && p !== c)) c.role = r;
+                broadcastLobby(l);
+                break;
+            }
+            case 'start': {
+                if (!l || l.host !== c) return;
+                l.started = true;
+                const st = lobbyState(l);
+                l.players.forEach(p => send(p, { t: 'start', roles: st.roles }));
+                break;
+            }
+            case 'input':      // игрок -> хосту
+                if (l && l.host !== c) send(l.host, { t: 'input', from: c.id, k: m.k });
+                break;
+            case 'restart':
+                if (l && l.host !== c) send(l.host, { t: 'restart' });
+                break;
+            case 'snap':       // хост -> всем остальным (пересылаем строку как есть)
+                if (l && l.host === c) l.players.forEach(p => { if (p !== c) send(p, text); });
+                break;
+            case 'leave':
+                leaveLobby(c);
+                break;
         }
-        case 'join': {
-            if (l) leaveLobby(c);
-            const lobby = lobbies.get(String(m.code || '').toUpperCase().trim());
-            if (!lobby) return send(c, { t: 'err', m: 'Лобби с таким кодом не найдено' });
-            if (lobby.started) return send(c, { t: 'err', m: 'Игра в этом лобби уже идёт' });
-            if (lobby.players.size >= MAX_PLAYERS) return send(c, { t: 'err', m: 'Лобби заполнено' });
-            c.name = cleanName(m.name);
-            lobby.players.set(c.id, c); c.lobby = lobby; c.role = null;
-            send(c, { t: 'joined', id: c.id, code: lobby.code, host: false });
-            broadcastLobby(lobby);
-            break;
-        }
-        case 'role': {
-            if (!l) return;
-            const r = m.role;
-            if (r === null || r === undefined) c.role = null;
-            else if (ROLES.includes(r) && ![...l.players.values()].some(p => p.role === r && p !== c)) c.role = r;
-            broadcastLobby(l);
-            break;
-        }
-        case 'start': {
-            if (!l || l.host !== c) return;
-            l.started = true;
-            const st = lobbyState(l);
-            l.players.forEach(p => send(p, { t: 'start', roles: st.roles }));
-            break;
-        }
-        case 'input':
-            if (l && l.host !== c) send(l.host, { t: 'input', from: c.id, k: m.k });
-            break;
-        case 'restart':
-            if (l && l.host !== c) send(l.host, { t: 'restart' });
-            break;
-        case 'snap':
-            if (l && l.host === c) l.players.forEach(p => { if (p !== c) send(p, text); });
-            break;
-        case 'leave':
-            leaveLobby(c);
-            break;
+    } catch (err) {
+        console.error('Error handling message:', err);
     }
 }
 
 function onConnect(socket) {
-    const c = {
-        id: 'p' + (nextClientId++),
-        socket,
-        buf: Buffer.alloc(0),
-        frag: [],
-        name: 'Игрок',
-        lobby: null,
-        role: null,
-        closed: false,
-        lastSeen: Date.now()     // heartbeat timestamp
-    };
+    const c = { id: 'p' + (nextClientId++), socket, buf: Buffer.alloc(0), frag: [], name: 'Игрок', lobby: null, role: null, closed: false };
     clients.set(c.id, c);
 
     const close = () => {
@@ -184,10 +181,8 @@ function onConnect(socket) {
         try { socket.destroy(); } catch (e) { /* ignore */ }
     };
     socket.on('error', close);
-    socket.on('end', close);   // важно: half-close (peer shutdown write)
     socket.on('close', close);
     socket.on('data', chunk => {
-        c.lastSeen = Date.now();
         c.buf = Buffer.concat([c.buf, chunk]);
         for (;;) {
             const b = c.buf;
@@ -205,7 +200,7 @@ function onConnect(socket) {
             if (mask) for (let i = 0; i < len; i++) payload[i] ^= mask[i & 3];
             c.buf = b.subarray(total);
 
-            if (op === 0x8) return close();
+            if (op === 0x8) { return close(); }
             if (op === 0x9) { try { socket.write(encodeFrame(payload.toString(), 0xA)); } catch (e) { /* ignore */ } continue; }
             if (op === 0xA) continue;
             if (op === 0x1 || op === 0x0) {
@@ -213,27 +208,16 @@ function onConnect(socket) {
                 if (fin) {
                     const text = Buffer.concat(c.frag).toString('utf8');
                     c.frag = [];
-                    try { handle(c, text); } catch (err) { console.error('[handle]', err); }
+                    handle(c, text);
                 }
             }
         }
     });
 }
 
-// ping раз в 25 сек + отвал мёртвых клиентов (90 сек без единого фрейма -> закрыть)
+// ping раз в 25 сек, чтобы прокси/хостинг не рвали тихие соединения
 setInterval(() => {
-    const now = Date.now();
-    clients.forEach(c => {
-        if (c.closed) return;
-        try { c.socket.write(encodeFrame('', 0x9)); } catch (e) { /* ignore */ }
-        if (now - c.lastSeen > CLIENT_IDLE_MS) {
-            console.warn('[timeout] closing idle client', c.id, 'age', now - c.lastSeen, 'ms');
-            c.closed = true;
-            leaveLobby(c);
-            clients.delete(c.id);
-            try { c.socket.destroy(); } catch (e) { /* ignore */ }
-        }
-    });
-}, PING_EVERY_MS);
+    clients.forEach(c => { try { c.socket.write(encodeFrame('', 0x9)); } catch (e) { /* ignore */ } });
+}, 25000);
 
 httpServer.listen(PORT, () => console.log('DVD Arena server: http://localhost:' + PORT));
