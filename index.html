@@ -2,6 +2,9 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#020617">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <title>DVD Arena</title>
     <style>
         html, body {
@@ -12,43 +15,83 @@
             overflow: hidden;
             background: #020617;
             color: #e2e8f0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            touch-action: none;
+            -webkit-touch-callout: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        #game-wrap {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #020617;
+            overflow: hidden;
         }
         canvas {
-            position: fixed;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
             display: block;
-            width: 800px;
-            height: 600px;
+            width: min(100vw, calc(100vh * 4 / 3));
+            height: min(100vh, calc(100vw * 3 / 4));
+            max-width: 100vw;
+            max-height: 100vh;
+            aspect-ratio: 4 / 3;
             background: #020617;
-            box-shadow: 0 0 40px rgba(0, 0, 0, 0.85);
+            box-shadow: 0 0 35px rgba(0, 0, 0, 0.85);
+            touch-action: none;
+        }
+        @media (orientation: portrait) and (max-width: 768px) {
+            #game-wrap {
+                justify-content: flex-start;
+                padding-top: max(env(safe-area-inset-top), 8px);
+            }
+            canvas {
+                width: 100vw;
+                height: calc(100vw * 3 / 4);
+                max-height: 52vh;
+            }
         }
         #ui {
             position: fixed;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            width: 800px;
-            height: 600px;
+            left: 0;
+            top: 0;
+            width: 100vw;
+            height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: rgba(2,6,23,0.94);
-            font-family: Arial, sans-serif;
+            background: rgba(2,6,23,0.96);
             color: #e2e8f0;
-            z-index: 10;
+            z-index: 50;
+            overflow-y: auto;
+            padding: 16px;
+            box-sizing: border-box;
         }
         #ui .hidden { display: none !important; }
-        .panel { width: 520px; text-align: center; }
-        .panel h1 { margin: 0 0 6px; font-size: 54px; letter-spacing: 3px; color: #fde047; text-shadow: 0 0 24px rgba(250,204,21,0.5); }
+        .panel {
+            width: 100%;
+            max-width: 520px;
+            text-align: center;
+            background: rgba(15,23,42,0.85);
+            border: 1px solid #334155;
+            border-radius: 20px;
+            padding: 24px 20px;
+            box-sizing: border-box;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.7);
+        }
+        .panel h1 { margin: 0 0 6px; font-size: clamp(32px, 8vw, 54px); letter-spacing: 3px; color: #fde047; text-shadow: 0 0 24px rgba(250,204,21,0.5); }
         .panel h2 { margin: 0 0 4px; font-size: 26px; }
         .panel p { margin: 4px 0 14px; color: #94a3b8; font-size: 14px; }
         .panel input { background: #0f172a; border: 2px solid #334155; color: #f1f5f9; border-radius: 10px; padding: 12px 14px;
                        font-size: 17px; width: 100%; box-sizing: border-box; text-align: center; outline: none; }
         .panel input:focus { border-color: #38bdf8; }
         .panel button { display: block; width: 100%; margin-top: 10px; padding: 13px; font-size: 18px; font-weight: bold; cursor: pointer;
-                        border: 0; border-radius: 10px; background: #f59e0b; color: #1e1b4b; }
+                        border: 0; border-radius: 10px; background: #f59e0b; color: #1e1b4b; -webkit-tap-highlight-color: transparent; }
         .panel button:hover { filter: brightness(1.12); }
         .panel button.ghost { background: #1e293b; color: #cbd5e1; border: 2px solid #334155; }
         .panel button:disabled { opacity: 0.5; cursor: default; }
@@ -57,22 +100,162 @@
         .row button { flex: 1.2; margin-top: 0; background: #38bdf8; }
         #menuMsg { margin-top: 12px; min-height: 20px; color: #fca5a5; font-size: 14px; }
         #lobbyCode { color: #fde047; letter-spacing: 5px; }
-        #roles { display: flex; gap: 8px; justify-content: center; margin: 10px 0; }
-        .role { width: 96px; padding: 8px 4px 10px; border: 2px solid #334155; border-radius: 12px; background: #0f172a; cursor: pointer; }
+        #roles { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 10px 0; }
+        .role { width: 90px; padding: 8px 4px 10px; border: 2px solid #334155; border-radius: 12px; background: #0f172a; cursor: pointer; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         .role:hover { border-color: #64748b; }
         .role.taken { opacity: 0.85; cursor: default; }
         .role.mine { border-color: #fde047; box-shadow: 0 0 14px rgba(250,204,21,0.5); opacity: 1; cursor: pointer; }
-        .role img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; background: #1e293b; display: block; margin: 0 auto 6px; }
+        .role img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; background: #1e293b; display: block; margin: 0 auto 6px; }
         .role b { display: block; font-size: 14px; }
         .role .side { font-size: 11px; display: block; margin: 2px 0; }
         .role .side.enemy { color: #f87171; } .role .side.team { color: #38bdf8; }
         .role em { display: block; font-style: normal; font-size: 12px; color: #94a3b8; min-height: 15px; overflow: hidden; }
         .role.taken em, .role.mine em { color: #bbf7d0; font-weight: bold; }
         #players { font-size: 13px; color: #94a3b8; margin-bottom: 6px; }
+
+        /* ---------- Управление стрелочками для телефона ---------- */
+        #touch-controls {
+            position: fixed;
+            left: 0;
+            bottom: 0;
+            width: 100vw;
+            box-sizing: border-box;
+            padding: 14px 20px max(env(safe-area-inset-bottom), 14px);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            pointer-events: none;
+            z-index: 40;
+            touch-action: none;
+        }
+        #touch-controls.hidden { display: none !important; }
+        .dpad {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: auto;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .dpad-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 6px 0;
+        }
+        .dbtn {
+            width: 66px;
+            height: 66px;
+            background: rgba(15, 23, 42, 0.85);
+            border: 2px solid #38bdf8;
+            color: #38bdf8;
+            font-size: 26px;
+            font-weight: 900;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(56, 189, 248, 0.2);
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+            cursor: pointer;
+            transition: transform 0.06s, background 0.06s, color 0.06s;
+        }
+        .dbtn:active, .dbtn.active {
+            background: #38bdf8;
+            color: #020617;
+            transform: scale(0.92);
+            box-shadow: 0 0 24px rgba(56, 189, 248, 0.9);
+        }
+        .dpad-center {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(56, 189, 248, 0.15);
+        }
+        .touch-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            pointer-events: auto;
+            touch-action: none;
+            margin-bottom: 6px;
+        }
+        .touch-act-btn {
+            padding: 14px 18px;
+            min-width: 100px;
+            background: rgba(15, 23, 42, 0.85);
+            border: 2px solid #f59e0b;
+            color: #fde047;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+            touch-action: none;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+            cursor: pointer;
+            transition: transform 0.06s, background 0.06s;
+        }
+        .touch-act-btn:active {
+            background: #f59e0b;
+            color: #1e1b4b;
+            transform: scale(0.93);
+        }
+        @media (orientation: portrait) and (max-width: 600px) {
+            #touch-controls {
+                flex-direction: column;
+                align-items: center;
+                gap: 14px;
+                padding-bottom: max(env(safe-area-inset-bottom), 18px);
+            }
+            .touch-actions {
+                flex-direction: row;
+                width: 100%;
+                max-width: 300px;
+                justify-content: space-between;
+                margin-bottom: 0;
+            }
+            .touch-act-btn {
+                flex: 1;
+                padding: 12px 14px;
+                font-size: 14px;
+            }
+            .dbtn {
+                width: 72px;
+                height: 72px;
+                font-size: 30px;
+            }
+        }
     </style>
 </head>
 <body>
-<canvas id="game"></canvas>
+<div id="game-wrap">
+    <canvas id="game"></canvas>
+    <!-- Виртуальные стрелочки и кнопки для телефона -->
+    <div id="touch-controls" class="hidden">
+        <div class="dpad">
+            <button class="dbtn" id="btnUp" aria-label="Вверх">▲</button>
+            <div class="dpad-row">
+                <button class="dbtn" id="btnLeft" aria-label="Влево">◀</button>
+                <div class="dpad-center"></div>
+                <button class="dbtn" id="btnRight" aria-label="Вправо">▶</button>
+            </div>
+            <button class="dbtn" id="btnDown" aria-label="Вниз">▼</button>
+        </div>
+        <div class="touch-actions">
+            <button class="touch-act-btn" id="btnCamTouch">📷 Камера</button>
+            <button class="touch-act-btn" id="btnRestartTouch">🔄 Рестарт</button>
+        </div>
+    </div>
+</div>
 <div id="ui">
     <div id="menu" class="panel">
         <h1>DVD ARENA</h1>
@@ -83,7 +266,7 @@
         <button id="btnSolo" class="ghost">Играть одному (остальные — боты)</button>
         <div id="menuMsg"></div>
     </div>
-    <div id="lobby" class="panel hidden" style="width:560px">
+    <div id="lobby" class="panel hidden">
         <h2>Лобби <span id="lobbyCode"></span></h2>
         <p>Отправьте код друзьям. Выберите роль — свободные роли играют боты.</p>
         <div id="roles"></div>
@@ -1628,7 +1811,7 @@ function draw() {
             bigText('Игроки вылечены до ' + CFG.bossTeamHP + ' HP · бустов вдвое больше', 18, H / 2 + 105, '#fde68a');
         } else {
             bigText('Приготовьтесь!', 30, H / 2 + 70, '#cbd5e1');
-            bigText('Карта: ' + map.name, 20, H / 2 + 102, '#fde68a');
+            bigText('Карта: ' + (map ? map.name : 'Открытое поле'), 20, H / 2 + 102, '#fde68a');
         }
         const myR = ROLES.find(r => r.id === net.myRole);
         bigText(myR ? 'WASD / стрелки — вы: ' + (stage === 2 && myR.id === 'semyon' ? 'БОСС' : myR.nick) + ' · C — камера'
@@ -1739,6 +1922,82 @@ addEventListener('keydown', e => {
 addEventListener('keyup', e => { keys[e.code] = false; sendInput(); });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; sendInput(); });
 addEventListener('mousedown', () => { requestRestart(); });
+
+/* ================= Сенсорное управление для телефона ================= */
+const touchDir = { up: false, down: false, left: false, right: false };
+
+function updateMobileInput() {
+    keys.ArrowUp = touchDir.up;
+    keys.ArrowDown = touchDir.down;
+    keys.ArrowLeft = touchDir.left;
+    keys.ArrowRight = touchDir.right;
+    sendInput();
+}
+
+function bindDirButton(btnId, dir) {
+    const el = document.getElementById(btnId);
+    if (!el) return;
+    const press = (e) => {
+        if (e && e.cancelable) e.preventDefault();
+        touchDir[dir] = true;
+        el.classList.add('active');
+        updateMobileInput();
+    };
+    const release = (e) => {
+        if (e && e.cancelable) e.preventDefault();
+        touchDir[dir] = false;
+        el.classList.remove('active');
+        updateMobileInput();
+    };
+    el.addEventListener('touchstart', press, { passive: false });
+    el.addEventListener('touchend', release, { passive: false });
+    el.addEventListener('touchcancel', release, { passive: false });
+    el.addEventListener('mousedown', press);
+    el.addEventListener('mouseup', release);
+    el.addEventListener('mouseleave', release);
+}
+
+bindDirButton('btnUp', 'up');
+bindDirButton('btnDown', 'down');
+bindDirButton('btnLeft', 'left');
+bindDirButton('btnRight', 'right');
+
+const btnCamTouch = document.getElementById('btnCamTouch');
+if (btnCamTouch) {
+    btnCamTouch.addEventListener('touchstart', (e) => {
+        if (e.cancelable) e.preventDefault();
+        net.camOn = !net.camOn;
+    }, { passive: false });
+    btnCamTouch.addEventListener('click', () => { net.camOn = !net.camOn; });
+}
+
+const btnRestartTouch = document.getElementById('btnRestartTouch');
+if (btnRestartTouch) {
+    btnRestartTouch.addEventListener('touchstart', (e) => {
+        if (e.cancelable) e.preventDefault();
+        requestRestart();
+    }, { passive: false });
+    btnRestartTouch.addEventListener('click', () => { requestRestart(); });
+}
+
+function updateTouchControlsVisibility() {
+    const tc = document.getElementById('touch-controls');
+    if (!tc) return;
+    const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.innerWidth <= 900);
+    if (net.running && isTouch) {
+        tc.classList.remove('hidden');
+    } else {
+        tc.classList.add('hidden');
+    }
+}
+window.addEventListener('resize', updateTouchControlsVisibility);
+
+canvas.addEventListener('touchstart', (e) => {
+    if (state === 'over') {
+        if (e.cancelable) e.preventDefault();
+        requestRestart();
+    }
+}, { passive: false });
 
 /* ================= Сеть ================= */
 const $ = id => document.getElementById(id);
@@ -1958,6 +2217,7 @@ function backToMenu(msg) {
     net.mode = 'none'; net.running = false; net.lobby = null; net.myRole = null; net.haveSnap = false; net.id = null;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     if (isObs) ctx.clearRect(0, 0, W, H); else { ctx.fillStyle = '#020617'; ctx.fillRect(0, 0, W, H); }
+    updateTouchControlsVisibility();
     showPanel('menu'); menuMsg(msg || '');
 }
 
@@ -1965,6 +2225,7 @@ function beginGame() {
     $('ui').style.display = 'none';
     net.running = true; net.haveSnap = false; net.inputs = {}; net.fx = []; cam.init = false; net.freezeActive = false;
     lastSentInput = '';
+    updateTouchControlsVisibility();
     if (net.mode === 'guest') initGuestState(); else newRound();
 }
 function initGuestState() {
