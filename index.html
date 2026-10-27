@@ -77,12 +77,17 @@
             width: 100%;
             max-width: 520px;
             text-align: center;
-            background: rgba(15,23,42,0.85);
+            background: rgba(15,23,42,0.92);
             border: 1px solid #334155;
             border-radius: 20px;
             padding: 24px 20px;
             box-sizing: border-box;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.7);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.75);
+            backdrop-filter: blur(10px);
+        }
+        .panel.panel-lobby {
+            max-width: 620px;
+            padding: 20px 16px 24px;
         }
         .panel h1 { margin: 0 0 6px; font-size: clamp(32px, 8vw, 54px); letter-spacing: 3px; color: #fde047; text-shadow: 0 0 24px rgba(250,204,21,0.5); }
         .panel h2 { margin: 0 0 4px; font-size: 26px; }
@@ -99,19 +104,104 @@
         .row input { flex: 1; letter-spacing: 6px; text-transform: uppercase; }
         .row button { flex: 1.2; margin-top: 0; background: #38bdf8; }
         #menuMsg { margin-top: 12px; min-height: 20px; color: #fca5a5; font-size: 14px; }
-        #lobbyCode { color: #fde047; letter-spacing: 5px; }
-        #roles { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 10px 0; }
-        .role { width: 90px; padding: 8px 4px 10px; border: 2px solid #334155; border-radius: 12px; background: #0f172a; cursor: pointer; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        .role:hover { border-color: #64748b; }
-        .role.taken { opacity: 0.85; cursor: default; }
-        .role.mine { border-color: #fde047; box-shadow: 0 0 14px rgba(250,204,21,0.5); opacity: 1; cursor: pointer; }
-        .role img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; background: #1e293b; display: block; margin: 0 auto 6px; }
-        .role b { display: block; font-size: 14px; }
-        .role .side { font-size: 11px; display: block; margin: 2px 0; }
-        .role .side.enemy { color: #f87171; } .role .side.team { color: #38bdf8; }
-        .role em { display: block; font-style: normal; font-size: 12px; color: #94a3b8; min-height: 15px; overflow: hidden; }
-        .role.taken em, .role.mine em { color: #bbf7d0; font-weight: bold; }
-        #players { font-size: 13px; color: #94a3b8; margin-bottom: 6px; }
+
+        /* Стильный блок кода лобби */
+        .lobby-code-card {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            background: rgba(30, 41, 59, 0.9);
+            border: 2px solid #475569;
+            border-radius: 14px;
+            padding: 8px 18px;
+            margin: 8px auto 14px;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        .lobby-code-label {
+            font-size: 12px;
+            font-weight: 800;
+            color: #94a3b8;
+            letter-spacing: 1px;
+        }
+        .lobby-code-val {
+            font-size: 28px;
+            font-weight: 900;
+            color: #fde047;
+            letter-spacing: 5px;
+            font-family: monospace;
+            text-shadow: 0 0 16px rgba(250, 204, 21, 0.5);
+        }
+        .copy-btn {
+            margin-top: 0 !important;
+            width: auto !important;
+            padding: 8px 14px !important;
+            font-size: 13px !important;
+            border-radius: 10px !important;
+            background: #38bdf8 !important;
+            color: #020617 !important;
+            box-shadow: 0 2px 10px rgba(56, 189, 248, 0.35);
+            transition: transform 0.1s, filter 0.1s;
+        }
+        .copy-btn:hover {
+            filter: brightness(1.15);
+            transform: translateY(-1px);
+        }
+        .copy-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Группировка ролей по командам в лобби */
+        .lobby-team-section {
+            margin-bottom: 12px;
+            background: rgba(15, 23, 42, 0.65);
+            border-radius: 14px;
+            padding: 10px 10px 14px;
+            border: 1px solid #334155;
+        }
+        .lobby-team-header {
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+        .lobby-team-header.enemy { color: #f87171; }
+        .lobby-team-header.team { color: #38bdf8; }
+        .roles-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        .role {
+            width: 122px;
+            padding: 10px 6px 12px;
+            border: 2px solid #334155;
+            border-radius: 14px;
+            background: #0f172a;
+            cursor: pointer;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            transition: transform 0.12s, border-color 0.12s, box-shadow 0.12s;
+        }
+        .role:hover { border-color: #64748b; transform: translateY(-2px); }
+        .role.taken { border-color: #10b981; background: rgba(6, 78, 59, 0.25); }
+        .role.mine { border-color: #fde047 !important; box-shadow: 0 0 16px rgba(250,204,21,0.55); background: rgba(250,204,21,0.12); transform: scale(1.03); }
+        .role img { width: 54px; height: 54px; border-radius: 50%; object-fit: cover; background: #1e293b; display: block; margin: 0 auto 6px; border: 2px solid #475569; }
+        .role.enemy img { border-color: #f87171; }
+        .role.team img { border-color: #38bdf8; }
+        .role.mine img { border-color: #fde047; }
+        .role-name { display: block; font-size: 14px; font-weight: 800; color: #f8fafc; }
+        .role-weapon { display: block; font-size: 11px; font-weight: 700; color: #fde047; background: rgba(250,204,21,0.1); border-radius: 6px; padding: 2px 4px; margin: 4px 0; }
+        .role-status { display: block; font-style: normal; font-size: 11px; color: #94a3b8; min-height: 15px; }
+        .role.taken .role-status { color: #86efac; font-weight: bold; }
+        .role.mine .role-status { color: #fde047; font-weight: 900; }
+        .players-wrap { margin: 8px 0 10px; font-size: 13px; color: #cbd5e1; }
+        .player-tag { display: inline-block; background: #1e293b; border: 1px solid #475569; padding: 3px 8px; border-radius: 8px; margin: 2px; }
+        .player-tag.host-tag { border-color: #f59e0b; color: #fde047; }
+        .menu-hint { margin-top: 14px; padding: 10px; background: rgba(30, 41, 59, 0.5); border-radius: 10px; font-size: 12px; color: #94a3b8; line-height: 1.6; }
 
         /* ---------- Управление стрелочками для телефона ---------- */
         #touch-controls {
@@ -259,20 +349,29 @@
 <div id="ui">
     <div id="menu" class="panel">
         <h1>DVD ARENA</h1>
-        <p>Онлайн-битва: Семён и Глеб против Вани, Дани и Матвея</p>
-        <input id="nameInp" maxlength="16" placeholder="Ваш ник">
-        <button id="btnCreate">Создать лобби</button>
-        <div class="row"><input id="codeInp" maxlength="4" placeholder="КОД"><button id="btnJoin">Присоединиться</button></div>
-        <button id="btnSolo" class="ghost">Играть одному (остальные — боты)</button>
+        <p>Онлайн-битва: Семён и Глеб против Вани, Дани, Матвея и Кирилла</p>
+        <input id="nameInp" maxlength="16" placeholder="Введите ваш ник">
+        <button id="btnCreate">👑 Создать лобби</button>
+        <div class="row"><input id="codeInp" maxlength="4" placeholder="КОД"><button id="btnJoin">🚪 Присоединиться</button></div>
+        <button id="btnSolo" class="ghost">👤 Играть с ботами (одиночный режим)</button>
         <div id="menuMsg"></div>
+        <div class="menu-hint">
+            <div>🎮 <b>WASD</b> или <b>Стрелочки</b> — управление &bull; 📷 <b>C</b> — камера &bull; 🔄 <b>R</b> / клик — рестарт</div>
+            <div style="margin-top: 3px; color: #38bdf8;">📱 На телефоне доступны сенсорные кнопки управления на экране</div>
+        </div>
     </div>
-    <div id="lobby" class="panel hidden">
-        <h2>Лобби <span id="lobbyCode"></span></h2>
-        <p>Отправьте код друзьям. Выберите роль — свободные роли играют боты.</p>
+    <div id="lobby" class="panel panel-lobby hidden">
+        <h2>ИГРОВОЕ ЛОББИ</h2>
+        <div class="lobby-code-card">
+            <span class="lobby-code-label">КОД ДЛЯ ДРУЗЕЙ:</span>
+            <span id="lobbyCode" class="lobby-code-val">----</span>
+            <button id="btnCopyCode" class="copy-btn" type="button" title="Скопировать код">📋 Скопировать</button>
+        </div>
+        <p>Выберите персонажа — у каждого уникальное оружие! Свободные роли играют боты.</p>
         <div id="roles"></div>
         <div id="players"></div>
-        <button id="btnStart">Старт</button>
-        <button id="btnLeave" class="ghost">Выйти</button>
+        <button id="btnStart">🚀 Начать бой</button>
+        <button id="btnLeave" class="ghost">Выйти в меню</button>
     </div>
 </div>
 
@@ -366,22 +465,31 @@ const IMGS = {
     t1: loadImg('photo1.jpg'),
     t2: loadImg('photo2.jpg'),
     t3: loadImg('photo3.jpg'),
+    t4: loadImg('photo4.jpg'),
     boss: loadImg('boss.jpg')
 };
 const FACES = [
-    { img: IMGS.enemy, nick: 'Семён', side: 'enemy' },
-    { img: IMGS.helper, nick: 'Глеб', side: 'enemy' },
-    { img: IMGS.t1, nick: 'Ваня', side: 'team' },
-    { img: IMGS.t2, nick: 'Даня', side: 'team' },
-    { img: IMGS.t3, nick: 'Матвей', side: 'team' }
+    { img: IMGS.enemy, nick: 'Семён', side: 'enemy', weapon: 'steel' },
+    { img: IMGS.helper, nick: 'Глеб', side: 'enemy', weapon: 'fire' },
+    { img: IMGS.t1, nick: 'Ваня', side: 'team', weapon: 'gold' },
+    { img: IMGS.t2, nick: 'Даня', side: 'team', weapon: 'fist' },
+    { img: IMGS.t3, nick: 'Матвей', side: 'team', weapon: 'diamond' },
+    { img: IMGS.t4, nick: 'Кирилл', side: 'team', weapon: 'electric' }
 ];
 const ROLES = [
-    { id: 'semyon', nick: 'Семён', team: 'enemy', photo: 'photo.jpg' },
-    { id: 'gleb', nick: 'Глеб', team: 'enemy', photo: 'photohelper.jpg' },
-    { id: 'vanya', nick: 'Ваня', team: 'team', photo: 'photo1.jpg' },
-    { id: 'danya', nick: 'Даня', team: 'team', photo: 'photo2.jpg' },
-    { id: 'matvey', nick: 'Матвей', team: 'team', photo: 'photo3.jpg' }
+    { id: 'semyon', nick: 'Семён', team: 'enemy', photo: 'photo.jpg', weapon: 'steel', weaponName: 'Стальной меч', weaponIcon: '⚔️' },
+    { id: 'gleb', nick: 'Глеб', team: 'enemy', photo: 'photohelper.jpg', weapon: 'fire', weaponName: 'Огненный меч', weaponIcon: '🔥' },
+    { id: 'vanya', nick: 'Ваня', team: 'team', photo: 'photo1.jpg', weapon: 'gold', weaponName: 'Золотой меч', weaponIcon: '✨' },
+    { id: 'danya', nick: 'Даня', team: 'team', photo: 'photo2.jpg', weapon: 'fist', weaponName: 'Боевой кулак', weaponIcon: '🥊' },
+    { id: 'matvey', nick: 'Матвей', team: 'team', photo: 'photo3.jpg', weapon: 'diamond', weaponName: 'Алмазный меч', weaponIcon: '💎' },
+    { id: 'kirill', nick: 'Кирилл', team: 'team', photo: 'photo4.jpg', weapon: 'electric', weaponName: 'Электро-меч', weaponIcon: '⚡' }
 ];
+const weaponByNick = nick => {
+    if (!nick) return 'steel';
+    if (nick === 'БОСС') return 'boss';
+    const f = FACES.find(f => f.nick === nick);
+    return (f && f.weapon) ? f.weapon : 'steel';
+};
 const imgByNick = nick => {
     if (!nick) return IMGS.enemy;
     if (nick === 'БОСС') return IMGS.boss;
@@ -508,6 +616,7 @@ function newRound() {
 
     const semyon = makeEnt({
         kind: 'enemy', nick: 'Семён', title: 'Семён · враг', img: IMGS.enemy, color: '#f87171',
+        weapon: 'steel',
         x: 0, y: 0, r: CFG.enemySize / 2,
         hp: CFG.enemyHP, max: CFG.enemyHP,
         speed: CFG.enemySpeed, spin: 3.6, swordLen: 44
@@ -516,16 +625,23 @@ function newRound() {
 
     const glеb = makeEnt({
         kind: 'enemy', helper: true, nick: 'Глеб', title: 'Глеб · помощник', img: IMGS.helper, color: '#fb923c',
+        weapon: 'fire',
         x: 0, y: 0, r: CFG.helperSize / 2,
         hp: CFG.helperHP, max: CFG.helperHP,
         speed: CFG.helperSpeed, spin: 3.3, swordLen: 40
     });
 
-    const team = [['Ваня', IMGS.t1], ['Даня', IMGS.t2], ['Матвей', IMGS.t3]].map(([nick, img], i) => makeEnt({
+    const team = [
+        ['Ваня', IMGS.t1, 'gold'],
+        ['Даня', IMGS.t2, 'fist'],
+        ['Матвей', IMGS.t3, 'diamond'],
+        ['Кирилл', IMGS.t4, 'electric']
+    ].map(([nick, img, weapon], i) => makeEnt({
         kind: 'team', nick, title: nick, img, color: '#38bdf8',
+        weapon,
         x: 0, y: 0, r: CFG.teamSize / 2,
         hp: CFG.teamHP, max: CFG.teamHP,
-        speed: CFG.teamSpeed, spin: 3 + i * 0.5, swordLen: 40
+        speed: CFG.teamSpeed, spin: 3 + i * 0.4, swordLen: 40
     }));
 
     // враг и помощник слева, игроки справа, места случайные и не в препятствиях
@@ -540,7 +656,12 @@ function newRound() {
     });
 
     ents = [semyon, glеb, ...team];
-    ents.forEach((e, i) => { e.role = ROLES[i].id; });
+    ents.forEach((e, i) => {
+        if (ROLES[i]) {
+            e.role = ROLES[i].id;
+            e.weapon = ROLES[i].weapon;
+        }
+    });
     enemy = semyon;
     helperEnt = glеb;
     pickups = []; particles = []; puffs = []; puddles = []; angels = []; droppedSwords = []; drops = []; ripples = []; texts = [];
@@ -751,6 +872,7 @@ function spawnMutant(x, y) {
     const m = makeEnt({
         kind: side, mutant: true, immortal: true, origin: face.nick,
         nick: face.nick, title: face.nick, img: face.img,
+        weapon: face.weapon || 'steel',
         color: side === 'team' ? '#38bdf8' : '#f87171',
         x, y, r: 1,
         hp: 1, max: 1,
@@ -826,6 +948,7 @@ function startBossStage() {
 
     const boss = makeEnt({
         kind: 'enemy', boss: true, role: 'semyon', nick: 'БОСС', title: 'БОСС', img: IMGS.boss, color: '#c084fc',
+        weapon: 'boss',
         x: 0, y: 0, r: 1, hp: CFG.bossHP, max: CFG.bossHP,
         speed: CFG.bossSpeed, spin: 3.2, swordLen: 56
     });
@@ -1210,7 +1333,526 @@ function drawSword(e, k) {
     const wscale = 0.6 + 0.4 * Math.min(1, e.swordMul);       // нож уже меча
     const bw = 7 * wscale;
     const acidLook = !!(e.mutant || e.acidSword);
-    const glow = acidLook ? '#84cc16' : (e.kind === 'enemy' ? '#f87171' : '#38bdf8');
+    const wp = e.boss ? 'boss' : (e.weapon || weaponByNick(e.nick) || 'steel');
+
+    // Базовый цвет свечения для оружия
+    let glow = acidLook ? '#84cc16' : (e.kind === 'enemy' ? '#f87171' : '#38bdf8');
+    if (wp === 'gold') glow = acidLook ? '#84cc16' : '#facc15';
+    else if (wp === 'fist') glow = acidLook ? '#84cc16' : '#ef4444';
+    else if (wp === 'diamond') glow = acidLook ? '#84cc16' : '#22d3ee';
+    else if (wp === 'electric') glow = acidLook ? '#84cc16' : '#38bdf8';
+    else if (wp === 'fire') glow = acidLook ? '#84cc16' : '#f97316';
+    else if (wp === 'boss') glow = acidLook ? '#84cc16' : '#c084fc';
+
+    // 1. БОЕВОЙ КУЛАК (Даня — вместо меча боксёрский кулак с бинтами)
+    if (wp === 'fist') {
+        ctx.shadowColor = glow;
+        ctx.shadowBlur = acidLook ? 22 : 14;
+
+        const armStartX = x0 + 2;
+        const fistStartX = Math.max(armStartX + 10, bx + L - 24);
+        const armLen = fistStartX - armStartX;
+        const armH = 10 * wscale;
+
+        // Рука (мускулистое предплечье)
+        const armGrad = ctx.createLinearGradient(0, -armH / 2, 0, armH / 2);
+        armGrad.addColorStop(0, '#fca5a5');
+        armGrad.addColorStop(0.5, '#f87171');
+        armGrad.addColorStop(1, '#b91c1c');
+        ctx.fillStyle = armGrad;
+        rr(armStartX, -armH / 2, armLen + 4, armH, 4);
+        ctx.fill();
+
+        // Спортивные белые бинты / обмотка
+        ctx.strokeStyle = '#f1f5f9';
+        ctx.lineWidth = 2.5;
+        const wraps = Math.max(2, Math.floor(armLen / 6));
+        for (let i = 0; i < wraps; i++) {
+            const wx = armStartX + 4 + i * 6;
+            if (wx < fistStartX) {
+                ctx.beginPath();
+                ctx.moveTo(wx, -armH / 2);
+                ctx.lineTo(wx + 3, armH / 2);
+                ctx.stroke();
+            }
+        }
+
+        // Манжета перчатки
+        ctx.fillStyle = '#0f172a';
+        rr(fistStartX - 2, -armH / 2 - 2, 6, armH + 4, 2);
+        ctx.fill();
+        ctx.fillStyle = '#facc15';
+        ctx.fillRect(fistStartX, -armH / 2 + 1, 2, armH - 2);
+
+        // Боксёрская перчатка / сжатый кулак (передний край ровно на bx + L)
+        const fistW = (bx + L) - fistStartX;
+        const fistH = 18 * wscale;
+
+        const fistGrad = ctx.createLinearGradient(0, -fistH / 2, 0, fistH / 2);
+        if (acidLook) {
+            fistGrad.addColorStop(0, '#bef264');
+            fistGrad.addColorStop(0.5, '#84cc16');
+            fistGrad.addColorStop(1, '#4d7c0f');
+        } else {
+            fistGrad.addColorStop(0, '#f87171');
+            fistGrad.addColorStop(0.3, '#ef4444');
+            fistGrad.addColorStop(0.8, '#b91c1c');
+            fistGrad.addColorStop(1, '#7f1d1d');
+        }
+        ctx.fillStyle = fistGrad;
+
+        ctx.beginPath();
+        ctx.moveTo(fistStartX, -fistH / 2 + 2);
+        ctx.lineTo(fistStartX + fistW * 0.65, -fistH / 2);
+        ctx.quadraticCurveTo(fistStartX + fistW, -fistH / 2 + 1, fistStartX + fistW, 0);
+        ctx.quadraticCurveTo(fistStartX + fistW, fistH / 2 - 1, fistStartX + fistW * 0.65, fistH / 2);
+        ctx.lineTo(fistStartX, fistH / 2 - 2);
+        ctx.closePath();
+        ctx.fill();
+
+        // Ударная накладка костяшек
+        ctx.fillStyle = acidLook ? 'rgba(217, 249, 157, 0.85)' : 'rgba(255, 255, 255, 0.85)';
+        ctx.beginPath();
+        ctx.arc(fistStartX + fistW - 4, 0, fistH * 0.32, -Math.PI / 2, Math.PI / 2);
+        ctx.fill();
+
+        ctx.strokeStyle = acidLook ? '#3f6212' : '#7f1d1d';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(fistStartX + fistW - 9, -fistH * 0.3);
+        ctx.lineTo(fistStartX + fistW - 3, -fistH * 0.3);
+        ctx.moveTo(fistStartX + fistW - 8, 0);
+        ctx.lineTo(fistStartX + fistW - 2, 0);
+        ctx.moveTo(fistStartX + fistW - 9, fistH * 0.3);
+        ctx.lineTo(fistStartX + fistW - 3, fistH * 0.3);
+        ctx.stroke();
+
+        ctx.fillStyle = acidLook ? '#65a30d' : '#991b1b';
+        rr(fistStartX + 3, fistH / 2 - 4, fistW * 0.5, 5 * wscale, 2);
+        ctx.fill();
+
+        // Шлейф и скорость удара
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = acidLook ? 'rgba(163, 230, 53, 0.6)' : 'rgba(248, 113, 113, 0.6)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(armStartX + 4, -fistH * 0.65);
+        ctx.lineTo(fistStartX + fistW * 0.7, -fistH * 0.65);
+        ctx.moveTo(armStartX + 12, fistH * 0.65);
+        ctx.lineTo(fistStartX + fistW * 0.6, fistH * 0.65);
+        ctx.stroke();
+
+        ctx.restore();
+        return;
+    }
+
+    // 2. АЛМАЗНЫЙ МЕЧ ИЗ MINECRAFT (Матвей — аутентичный пиксельный стиль)
+    if (wp === 'diamond') {
+        ctx.shadowColor = glow;
+        ctx.shadowBlur = acidLook ? 22 : 16;
+
+        const ps = 3.5;
+        // Деревянная рукоять в стиле пикселей Minecraft
+        ctx.fillStyle = '#451a03';
+        rr(x0 + 1, -ps, 15, ps * 2, 1);
+        ctx.fill();
+        ctx.fillStyle = '#78350f';
+        ctx.fillRect(x0 + 3, -ps + 1, 11, ps * 2 - 2);
+
+        // Навершие
+        ctx.fillStyle = '#164e63';
+        ctx.fillRect(x0 - 2, -ps * 1.4, ps * 1.5, ps * 2.8);
+        ctx.fillStyle = '#06b6d4';
+        ctx.fillRect(x0 - 1, -ps, ps, ps * 2);
+
+        // Ступенчатая гарда Minecraft
+        const gx = x0 + 15;
+        ctx.fillStyle = '#083344';
+        ctx.fillRect(gx, -16 * wscale, 6, 32 * wscale);
+        ctx.fillRect(gx - 4, -13 * wscale, 4, 8 * wscale);
+        ctx.fillRect(gx - 4, 5 * wscale, 4, 8 * wscale);
+        ctx.fillStyle = acidLook ? '#84cc16' : '#06b6d4';
+        ctx.fillRect(gx + 1, -14 * wscale, 4, 6 * wscale);
+        ctx.fillRect(gx + 1, 8 * wscale, 4, 6 * wscale);
+        ctx.fillStyle = acidLook ? '#bef264' : '#67e8f9';
+        ctx.fillRect(gx + 1, -4 * wscale, 4, 8 * wscale);
+
+        // Ступенчатый алмазный клинок
+        const bladeStartX = gx + 6;
+        const bladeLen = (bx + L) - bladeStartX;
+        const steps = Math.max(4, Math.floor(bladeLen / 7));
+        const stepW = bladeLen / steps;
+
+        // Контур блоков
+        ctx.fillStyle = acidLook ? '#1a2e05' : '#083344';
+        for (let s = 0; s < steps; s++) {
+            const sx = bladeStartX + s * stepW;
+            const w = (s === steps - 1) ? 2 : bw + 1;
+            ctx.fillRect(sx, -w, stepW + 0.5, w * 2);
+        }
+        ctx.fillRect(bx + L - stepW, -ps, stepW, ps * 2);
+
+        // Алмазное тело (Cyan 500)
+        ctx.fillStyle = acidLook ? '#65a30d' : '#0891b2';
+        for (let s = 0; s < steps; s++) {
+            const sx = bladeStartX + s * stepW;
+            const w = (s === steps - 1) ? 1.5 : bw - 1;
+            ctx.fillRect(sx, -w, stepW, w * 2);
+        }
+
+        // Светлая алмазная грань (Cyan 300)
+        ctx.fillStyle = acidLook ? '#a3e635' : '#22d3ee';
+        for (let s = 0; s < steps; s++) {
+            const sx = bladeStartX + s * stepW;
+            const w = (s === steps - 1) ? 1 : bw - 2.5;
+            ctx.fillRect(sx + 0.5, -w, stepW - 1, w * 1.4);
+        }
+
+        // Блики на алмазных пикселях
+        ctx.fillStyle = acidLook ? '#ecfccb' : '#cffafe';
+        for (let s = 1; s < steps - 1; s += 2) {
+            const sx = bladeStartX + s * stepW;
+            ctx.fillRect(sx + 1, -bw + 1.5, stepW * 0.6, 2);
+        }
+        ctx.fillRect(bx + L - stepW * 0.8, -1, stepW * 0.8, 2);
+
+        ctx.restore();
+        return;
+    }
+
+    // 3. ЭЛЕКТРИЧЕСКИЙ МЕЧ (Кирилл — плазменный клинок с живыми разрядами молний)
+    if (wp === 'electric') {
+        ctx.shadowColor = glow;
+        ctx.shadowBlur = acidLook ? 24 : 20;
+
+        // Кибер-рукоять
+        ctx.fillStyle = '#0f172a';
+        rr(x0 + 1, -4, 15, 8, 2);
+        ctx.fill();
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(x0 + 4, -2, 2, 4);
+        ctx.fillRect(x0 + 8, -2, 2, 4);
+        ctx.fillRect(x0 + 12, -2, 2, 4);
+
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.arc(x0, 0, 5, 0, 6.283);
+        ctx.fill();
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(x0, 0, 2.5, 0, 6.283);
+        ctx.fill();
+
+        ctx.fillStyle = '#1e293b';
+        rr(x0 + 15, -12 * wscale, 5, 24 * wscale, 2);
+        ctx.fill();
+        ctx.fillStyle = '#60a5fa';
+        ctx.fillRect(x0 + 18, -10 * wscale, 2, 6 * wscale);
+        ctx.fillRect(x0 + 18, 4 * wscale, 2, 6 * wscale);
+
+        // Плазменная аура лезвия
+        const elGrad = ctx.createLinearGradient(0, -bw, 0, bw);
+        if (acidLook) {
+            elGrad.addColorStop(0, 'rgba(163, 230, 53, 0.2)');
+            elGrad.addColorStop(0.5, 'rgba(132, 204, 22, 0.9)');
+            elGrad.addColorStop(1, 'rgba(77, 124, 15, 0.2)');
+        } else {
+            elGrad.addColorStop(0, 'rgba(56, 189, 248, 0.2)');
+            elGrad.addColorStop(0.5, 'rgba(56, 189, 248, 0.95)');
+            elGrad.addColorStop(1, 'rgba(99, 102, 241, 0.2)');
+        }
+        ctx.fillStyle = elGrad;
+        ctx.beginPath();
+        ctx.moveTo(bx, -bw * 1.1);
+        ctx.lineTo(bx + L * 0.85, -bw * 0.9);
+        ctx.lineTo(bx + L + 3, 0);
+        ctx.lineTo(bx + L * 0.85, bw * 0.9);
+        ctx.lineTo(bx, bw * 1.1);
+        ctx.closePath();
+        ctx.fill();
+
+        // Бело-голубой сверхгорячий плазменный стержень
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(bx, -bw * 0.35);
+        ctx.lineTo(bx + L * 0.9, -bw * 0.25);
+        ctx.lineTo(bx + L, 0);
+        ctx.lineTo(bx + L * 0.9, bw * 0.25);
+        ctx.lineTo(bx, bw * 0.35);
+        ctx.closePath();
+        ctx.fill();
+
+        // Анимированные разряды молний вдоль лезвия
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = acidLook ? '#bef264' : '#bae6fd';
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        const now = performance.now();
+        const segs = Math.max(3, Math.floor(L / 12));
+        ctx.moveTo(bx, 0);
+        for (let s = 1; s <= segs; s++) {
+            const lx = bx + (L * s) / segs;
+            const seed = Math.sin(now * 0.02 + s * 1.7 + k);
+            const offset = seed * bw * 0.85;
+            ctx.lineTo(lx, offset);
+        }
+        ctx.stroke();
+
+        ctx.strokeStyle = acidLook ? '#d9f99d' : '#e0f2fe';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(bx + 4, -bw * 0.4);
+        for (let s = 1; s < segs; s++) {
+            const lx = bx + (L * s) / segs;
+            const seed = Math.cos(now * 0.025 + s * 2.3 + k);
+            ctx.lineTo(lx, -seed * bw * 0.7);
+        }
+        ctx.stroke();
+
+        const sparkPulse = (Math.sin(now * 0.04 + k) + 1) * 2;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(bx + L + 1, 0, 1.5 + sparkPulse * 0.5, 0, 6.283);
+        ctx.fill();
+
+        ctx.restore();
+        return;
+    }
+
+    // 4. ЗОЛОТОЙ МЕЧ (Иван / Ваня — королевский золотой клинок с рубинами)
+    if (wp === 'gold') {
+        ctx.shadowColor = glow;
+        ctx.shadowBlur = acidLook ? 22 : 16;
+
+        ctx.fillStyle = '#831843';
+        rr(x0 + 2, -3.5, 14, 7, 2);
+        ctx.fill();
+        ctx.strokeStyle = '#fde047';
+        ctx.lineWidth = 1.2;
+        for (let i = 5; i < 16; i += 3.5) {
+            ctx.beginPath();
+            ctx.moveTo(x0 + i, -3.5);
+            ctx.lineTo(x0 + i + 1.5, 3.5);
+            ctx.stroke();
+        }
+
+        const pg = ctx.createRadialGradient(x0 - 1, -1, 1, x0, 0, 6);
+        pg.addColorStop(0, '#fef08a');
+        pg.addColorStop(1, '#ca8a04');
+        ctx.fillStyle = pg;
+        ctx.beginPath();
+        ctx.arc(x0, 0, 6, 0, 6.283);
+        ctx.fill();
+        ctx.fillStyle = '#e11d48';
+        ctx.beginPath();
+        ctx.arc(x0, 0, 2.5, 0, 6.283);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(x0 - 0.5, -1, 1, 1);
+
+        const gg = ctx.createLinearGradient(0, -16 * wscale, 0, 16 * wscale);
+        gg.addColorStop(0, '#fef08a');
+        gg.addColorStop(0.3, '#facc15');
+        gg.addColorStop(0.7, '#ca8a04');
+        gg.addColorStop(1, '#fef08a');
+        ctx.fillStyle = gg;
+        ctx.beginPath();
+        ctx.moveTo(x0 + 13, -4);
+        ctx.lineTo(x0 + 17, -16 * wscale);
+        ctx.lineTo(x0 + 22, -15 * wscale);
+        ctx.lineTo(x0 + 21, -4);
+        ctx.lineTo(x0 + 21, 4);
+        ctx.lineTo(x0 + 22, 15 * wscale);
+        ctx.lineTo(x0 + 17, 16 * wscale);
+        ctx.lineTo(x0 + 13, 4);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#a16207';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.fillStyle = '#e11d48';
+        ctx.beginPath();
+        ctx.arc(x0 + 17, 0, 3, 0, 6.283);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(x0 + 16.5, -0.5, 1, 1);
+
+        const goldBladeGrad = ctx.createLinearGradient(0, -bw, 0, bw);
+        if (acidLook) {
+            goldBladeGrad.addColorStop(0, '#ecfccb');
+            goldBladeGrad.addColorStop(0.5, '#a3e635');
+            goldBladeGrad.addColorStop(1, '#4d7c0f');
+        } else {
+            goldBladeGrad.addColorStop(0, '#fffbeb');
+            goldBladeGrad.addColorStop(0.2, '#fef08a');
+            goldBladeGrad.addColorStop(0.5, '#facc15');
+            goldBladeGrad.addColorStop(0.8, '#eab308');
+            goldBladeGrad.addColorStop(1, '#a16207');
+        }
+        ctx.fillStyle = goldBladeGrad;
+        ctx.beginPath();
+        ctx.moveTo(bx, -bw);
+        ctx.lineTo(bx + L * 0.84, -bw * 0.85);
+        ctx.lineTo(bx + L, 0);
+        ctx.lineTo(bx + L * 0.84, bw * 0.85);
+        ctx.lineTo(bx, bw);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = acidLook ? 'rgba(63,98,18,0.8)' : '#ca8a04';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(bx + 2, 0);
+        ctx.lineTo(bx + L * 0.86, 0);
+        ctx.stroke();
+
+        ctx.strokeStyle = acidLook ? '#f7fee7' : '#ffffff';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(bx + 3, -bw * 0.6);
+        ctx.lineTo(bx + L * 0.82, -bw * 0.45);
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(bx + L * 0.95, 0, 1.5, 0, 6.283);
+        ctx.fill();
+
+        ctx.restore();
+        return;
+    }
+
+    // 5. ОГНЕННЫЙ МЕЧ (Глеб — пылающее лезвие с языками пламени)
+    if (wp === 'fire') {
+        ctx.shadowColor = glow;
+        ctx.shadowBlur = acidLook ? 22 : 18;
+
+        ctx.fillStyle = '#1c1917';
+        rr(x0 + 2, -3.5, 14, 7, 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ea580c';
+        ctx.lineWidth = 1.2;
+        for (let i = 5; i < 16; i += 4) {
+            ctx.beginPath();
+            ctx.moveTo(x0 + i, -3.5);
+            ctx.lineTo(x0 + i + 1, 3.5);
+            ctx.stroke();
+        }
+
+        ctx.fillStyle = '#f97316';
+        ctx.beginPath();
+        ctx.arc(x0, 0, 5, 0, 6.283);
+        ctx.fill();
+
+        ctx.fillStyle = '#7c2d12';
+        rr(x0 + 15, -14 * wscale, 6, 28 * wscale, 2);
+        ctx.fill();
+        ctx.strokeStyle = '#f97316';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        const fireBladeGrad = ctx.createLinearGradient(0, -bw, 0, bw);
+        if (acidLook) {
+            fireBladeGrad.addColorStop(0, '#ecfccb');
+            fireBladeGrad.addColorStop(0.5, '#84cc16');
+            fireBladeGrad.addColorStop(1, '#3f6212');
+        } else {
+            fireBladeGrad.addColorStop(0, '#fef08a');
+            fireBladeGrad.addColorStop(0.3, '#f97316');
+            fireBladeGrad.addColorStop(0.7, '#ea580c');
+            fireBladeGrad.addColorStop(1, '#991b1b');
+        }
+        ctx.fillStyle = fireBladeGrad;
+        ctx.beginPath();
+        ctx.moveTo(bx, -bw);
+        ctx.lineTo(bx + L * 0.82, -bw * 0.85);
+        ctx.lineTo(bx + L, 0);
+        ctx.lineTo(bx + L * 0.82, bw * 0.85);
+        ctx.lineTo(bx, bw);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.shadowBlur = 0;
+        const now = performance.now();
+        ctx.fillStyle = acidLook ? 'rgba(190, 242, 100, 0.7)' : 'rgba(253, 224, 71, 0.7)';
+        const flameCount = Math.max(3, Math.floor(L / 12));
+        for (let f = 1; f < flameCount; f++) {
+            const fx = bx + (L * f) / flameCount;
+            const fh = Math.sin(now * 0.015 + f * 2.1 + k) * bw * 0.6;
+            ctx.beginPath();
+            ctx.arc(fx, fh, 2.5, 0, 6.283);
+            ctx.fill();
+        }
+
+        ctx.restore();
+        return;
+    }
+
+    // 6. КЛИНОК БЕЗДНЫ (БОСС — тёмный гигантский меч с рунами)
+    if (wp === 'boss') {
+        ctx.shadowColor = glow;
+        ctx.shadowBlur = acidLook ? 24 : 22;
+
+        ctx.fillStyle = '#09090b';
+        rr(x0 + 1, -5, 16, 10, 2);
+        ctx.fill();
+        ctx.strokeStyle = '#a855f7';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.fillStyle = '#3b0764';
+        ctx.beginPath();
+        ctx.moveTo(x0 + 14, -6);
+        ctx.lineTo(x0 + 18, -20 * wscale);
+        ctx.lineTo(x0 + 24, -18 * wscale);
+        ctx.lineTo(x0 + 22, 0);
+        ctx.lineTo(x0 + 24, 18 * wscale);
+        ctx.lineTo(x0 + 18, 20 * wscale);
+        ctx.lineTo(x0 + 14, 6);
+        ctx.closePath();
+        ctx.fill();
+
+        const bossGrad = ctx.createLinearGradient(0, -bw * 1.3, 0, bw * 1.3);
+        if (acidLook) {
+            bossGrad.addColorStop(0, '#d9f99d');
+            bossGrad.addColorStop(0.5, '#65a30d');
+            bossGrad.addColorStop(1, '#1a2e05');
+        } else {
+            bossGrad.addColorStop(0, '#f3e8ff');
+            bossGrad.addColorStop(0.3, '#a855f7');
+            bossGrad.addColorStop(0.7, '#581c87');
+            bossGrad.addColorStop(1, '#1e1b4b');
+        }
+        ctx.fillStyle = bossGrad;
+        ctx.beginPath();
+        ctx.moveTo(bx, -bw * 1.3);
+        ctx.lineTo(bx + L * 0.78, -bw * 1.1);
+        ctx.lineTo(bx + L, 0);
+        ctx.lineTo(bx + L * 0.78, bw * 1.1);
+        ctx.lineTo(bx, bw * 1.3);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = acidLook ? '#bef264' : '#e9d5ff';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.moveTo(bx + 4, 0);
+        ctx.lineTo(bx + L * 0.85, 0);
+        ctx.stroke();
+
+        ctx.restore();
+        return;
+    }
+
+    // 7. СТАЛЬНОЙ МЕЧ (Семён / по умолчанию)
+    ctx.shadowColor = glow; ctx.shadowBlur = acidLook ? 22 : 14;
 
     // рукоять
     ctx.fillStyle = '#5b3a1e';
@@ -1224,16 +1866,15 @@ function drawSword(e, k) {
     ctx.beginPath(); ctx.arc(x0, 0, 5, 0, 6.283); ctx.fill();
     // гарда
     const gg = ctx.createLinearGradient(0, -15, 0, 15);
-    gg.addColorStop(0, '#fcd34d'); gg.addColorStop(0.5, '#b45309'); gg.addColorStop(1, '#fcd34d');
+    gg.addColorStop(0, '#94a3b8'); gg.addColorStop(0.5, '#475569'); gg.addColorStop(1, '#94a3b8');
     ctx.fillStyle = gg;
     ctx.beginPath();
     ctx.moveTo(x0 + 14, -4); ctx.lineTo(x0 + 18, -15); ctx.lineTo(x0 + 22, -15);
     ctx.lineTo(x0 + 22, 15); ctx.lineTo(x0 + 18, 15); ctx.lineTo(x0 + 14, 4);
     ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = '#78350f'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.strokeStyle = '#334155'; ctx.lineWidth = 1; ctx.stroke();
 
     // клинок
-    ctx.shadowColor = glow; ctx.shadowBlur = acidLook ? 22 : 14;
     const bg2 = ctx.createLinearGradient(0, -bw, 0, bw);
     if (acidLook) {
         bg2.addColorStop(0, '#ecfccb'); bg2.addColorStop(0.5, '#a3e635'); bg2.addColorStop(1, '#4d7c0f');
@@ -1558,13 +2199,17 @@ function drawEventTimer() {
 function drawCard(e, x, y, w, h, ring) {
     if (!e) return;
     ctx.globalAlpha = e.alive ? 1 : 0.5;
-    ctx.fillStyle = 'rgba(15,23,42,0.7)'; rr(x, y, w, h, 10); ctx.fill();
+    ctx.fillStyle = 'rgba(15,23,42,0.75)'; rr(x, y, w, h, 10); ctx.fill();
     ctx.strokeStyle = e.alive ? ring : 'rgba(148,163,184,0.5)'; ctx.lineWidth = 1.5; ctx.stroke();
     avatar(e.img || imgByNick(e.nick), x + 22, y + 22, 14, e.alive ? ring : '#64748b', !e.alive);
 
+    const rObj = ROLES.find(r => r.id === e.role);
+    const icon = rObj ? rObj.weaponIcon : '';
+    const titleText = (e.title || e.nick || '') + (icon ? ' ' + icon : '');
+
     ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 11px Arial, sans-serif';
     ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-    ctx.fillText(e.title || e.nick || '', x + 44, y + 17);
+    ctx.fillText(titleText, x + 44, y + 17);
     ctx.textAlign = 'right';
     ctx.fillText(e.alive ? `${e.hp}/${e.max}` : 'ВЫБЫЛ', x + w - 8, y + 17);
     bar(x + 44, y + 23, w - 52, 7, (e.max ? e.hp / e.max : 0), hpColor(e.max ? e.hp / e.max : 0));
@@ -2071,6 +2716,7 @@ function buildSnap() {
     ents.forEach(e => { e.player = playerName(e.role); });
     const E = e => ({
         id: e.id, role: e.role || '', player: e.player || '', nick: e.nick, title: e.title, kind: e.kind, color: e.color,
+        weapon: e.weapon || weaponByNick(e.nick),
         helper: !!e.helper, boss: !!e.boss, mutant: !!e.mutant, immortal: !!e.immortal, dissolving: !!e.dissolving,
         dissolveT: r1(e.dissolveT || 0), x: r1(e.x), y: r1(e.y), r: r1(e.r), angle: Math.round(e.angle * 1000) / 1000,
         spin: e.spin, hp: e.hp, max: e.max, alive: !!e.alive, flash: r1(e.flash), shieldT: r1(e.shieldT), boostT: r1(e.boostT),
@@ -2115,6 +2761,7 @@ function applySnap(d) {
         if (!e) e = Object.assign({ hits: new Map(), baseR: se.r, tx: se.x, ty: se.y, x: se.x, y: se.y }, se);
         else { const { x, y, ...rest } = se; Object.assign(e, rest); e.tx = x; e.ty = y; }
         e.img = imgByNick(e.nick);
+        e.weapon = se.weapon || weaponByNick(e.nick);
         return e;
     });
     const byId = id => ents.find(e => e.id === id);
@@ -2188,19 +2835,45 @@ function renderLobby() {
     if (!L) return;
     $('lobbyCode').textContent = L.code;
     const nameOf = Object.fromEntries(L.players.map(p => [p.id, p.name]));
-    $('roles').innerHTML = ROLES.map(r => {
+
+    const enemies = ROLES.filter(r => r.team === 'enemy');
+    const players = ROLES.filter(r => r.team === 'team');
+
+    const renderCard = r => {
         const occ = L.roles[r.id], mine = occ === net.id;
-        return '<div class="role' + (occ ? ' taken' : '') + (mine ? ' mine' : '') + '" data-role="' + r.id + '">' +
+        const statusText = mine ? '⭐ ВЫ' : (occ ? (nameOf[occ] || 'Игрок') : '🤖 Бот');
+        return '<div class="role ' + r.team + (occ ? ' taken' : '') + (mine ? ' mine' : '') + '" data-role="' + r.id + '">' +
             '<img src="' + r.photo + '" alt="" onerror="this.style.visibility=\'hidden\'">' +
-            '<b>' + r.nick + '</b><span class="side ' + r.team + '">' + (r.team === 'enemy' ? 'враг' : 'игроки') + '</span>' +
-            '<em>' + (occ ? esc(nameOf[occ] || '?') + (mine ? ' (вы)' : '') : 'БОТ') + '</em></div>';
-    }).join('');
+            '<span class="role-name">' + r.nick + '</span>' +
+            '<span class="role-weapon">' + r.weaponIcon + ' ' + r.weaponName + '</span>' +
+            '<span class="role-status">' + esc(statusText) + '</span>' +
+        '</div>';
+    };
+
+    $('roles').innerHTML =
+        '<div class="lobby-team-section">' +
+            '<div class="lobby-team-header enemy">⚔️ ВРАГИ (2 персонажа)</div>' +
+            '<div class="roles-grid">' + enemies.map(renderCard).join('') + '</div>' +
+        '</div>' +
+        '<div class="lobby-team-section">' +
+            '<div class="lobby-team-header team">🛡️ ИГРОКИ (4 персонажа)</div>' +
+            '<div class="roles-grid">' + players.map(renderCard).join('') + '</div>' +
+        '</div>';
+
     $('roles').querySelectorAll('.role').forEach(el => { el.onclick = () => pickRole(el.dataset.role); });
-    $('players').innerHTML = 'В лобби: ' + L.players.map(p => esc(p.name) + (p.id === L.host ? ' 👑' : '')).join(', ');
+
+    const playerList = L.players.map(p => {
+        const isHost = p.id === L.host;
+        const myBadge = p.id === net.id ? ' (вы)' : '';
+        return '<span class="player-tag' + (isHost ? ' host-tag' : '') + '">' + (isHost ? '👑 ' : '') + esc(p.name) + myBadge + '</span>';
+    }).join(' ');
+
+    $('players').innerHTML = '<div class="players-wrap"><span style="color:#94a3b8;font-weight:700;">В лобби (' + L.players.length + '):</span> ' + playerList + '</div>';
+
     const canStart = net.mode === 'solo' || L.host === net.id;
     $('btnStart').style.display = 'block';
     $('btnStart').disabled = !canStart;
-    $('btnStart').textContent = canStart ? 'Старт' : 'Ждём, пока хост начнёт игру…';
+    $('btnStart').textContent = canStart ? '🚀 Начать бой' : '⏳ Ждём, пока хост начнёт игру…';
 }
 function pickRole(id) {
     const L = net.lobby, occ = L.roles[id];
@@ -2256,6 +2929,35 @@ $('btnStart').onclick = () => {
     else if (net.lobby && net.lobby.host === net.id) wsSend({ t: 'start' });
 };
 $('btnLeave').onclick = () => { wsSend({ t: 'leave' }); backToMenu(''); };
+const btnCopyCode = document.getElementById('btnCopyCode');
+if (btnCopyCode) {
+    btnCopyCode.onclick = () => {
+        const el = $('lobbyCode');
+        const code = el ? el.textContent.trim() : '';
+        if (!code || code === '----') return;
+        const setCopied = () => {
+            btnCopyCode.textContent = '✓ Скопировано!';
+            setTimeout(() => { btnCopyCode.textContent = '📋 Скопировать'; }, 1800);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(code).then(setCopied).catch(() => {
+                fallbackCopy(code);
+                setCopied();
+            });
+        } else {
+            fallbackCopy(code);
+            setCopied();
+        }
+    };
+}
+function fallbackCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+}
 $('codeInp').addEventListener('keydown', e => { if (e.key === 'Enter') $('btnJoin').click(); });
 try { $('nameInp').value = localStorage.getItem('dvd_name') || ''; } catch (e) { /* ignore */ }
 
