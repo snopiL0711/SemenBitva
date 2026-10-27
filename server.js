@@ -33,7 +33,7 @@ const httpServer = http.createServer((req, res) => {
     if (!MIME[ext]) { res.writeHead(404); return res.end('Not found'); }
     fs.readFile(path.join(ROOT, name), (err, data) => {
         if (err) { res.writeHead(404); return res.end('Not found'); }
-        res.writeHead(200, { 'Content-Type': MIME[ext], 'Cache-Control': 'no-cache' });
+        res.writeHead(200, { 'Content-Type': MIME[ext], 'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0' });
         res.end(data);
     });
 });
