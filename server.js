@@ -14,7 +14,7 @@ const crypto = require('crypto');
 
 const PORT = process.env.PORT || 3000;
 const ROOT = __dirname;
-const ROLES = ['semyon', 'gleb', 'vanya', 'danya', 'matvey'];
+const ROLES = ['semyon', 'gleb', 'vanya', 'danya', 'matvey', 'kirill'];
 const MAX_PLAYERS = 8;
 const MAX_FRAME = 1024 * 1024;
 
